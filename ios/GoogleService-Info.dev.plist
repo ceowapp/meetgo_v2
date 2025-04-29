@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1073852357664-gd0h34vb4t5mq9718a5k4rnc7cr6t8pp.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1073852357664-gd0h34vb4t5mq9718a5k4rnc7cr6t8pp</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1073852357664-psodfillk408maceq34ig3tf9dusmfid.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDvavErkKRDH8XpSTG1EvA1oeJ6badLU_k</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1073852357664</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>app.meetgo.vn</string>
+	<key>PROJECT_ID</key>
+	<string>meetgo-dev-401e5</string>
+	<key>STORAGE_BUCKET</key>
+	<string>meetgo-dev-401e5.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1073852357664:ios:7f27e4ea8fd25ceb5eb045</string>
+	<key>DATABASE_URL</key>
+	<string>https://meetgo-dev-401e5-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+</dict>
+</plist>

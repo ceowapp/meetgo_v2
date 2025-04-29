@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-vision-camera/android/build.gradle b/node_modules/react-native-vision-camera/android/build.gradle
+index ddfa243..d37a687 100644
+--- a/node_modules/react-native-vision-camera/android/build.gradle
++++ b/node_modules/react-native-vision-camera/android/build.gradle
+@@ -352,7 +352,7 @@ if (ENABLE_FRAME_PROCESSORS) {
+ 
+   task downloadBoost(dependsOn: createNativeDepsDirectories, type: Download) {
+     def transformedVersion = BOOST_VERSION.replace("_", ".")
+-    def srcUrl = "https://boostorg.jfrog.io/artifactory/main/release/${transformedVersion}/source/boost_${BOOST_VERSION}.tar.gz"
++    def srcUrl = "https://sourceforge.net/projects/boost/files/boost/${transformedVersion}/boost_${BOOST_VERSION}.tar.gz"
+     if (REACT_NATIVE_VERSION < 69) {
+       srcUrl = "https://github.com/react-native-community/boost-for-react-native/releases/download/v${transformedVersion}-0/boost_${BOOST_VERSION}.tar.gz"
+     }

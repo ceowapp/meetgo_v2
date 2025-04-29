@@ -1,0 +1,79 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    ENV["Firebase_CLI_TOKEN"] = "1//0e-2P6JXJ4R7gCgYIARAAGA4SNwF-L9Ir0pGfAVDqXpnOAUB6SGC5XQmsODc7OOkfdhbC4q5nskHQH_0Hb-sQbHlUHWh24yUINps"
+  end
+  desc "Push a new release ipa file to the Firebase distribution"
+  lane :build_dev do |options|
+    build_ipa_dev()
+    enable_automatic_code_signing(path: "./ios/meetgo.xcodeproj")
+    upload_ipa_distribution(options)
+    # upload_to_app_store(skip_metadata: true, skip_screenshots: true)
+  end
+
+  lane :build_ipa_dev do 
+    increment_build_number(xcodeproj: "./ios/meetgo.xcodeproj")
+    build_app(
+      workspace: "./ios/meetgo.xcworkspace", 
+      scheme: "meetgo",
+      export_method: 'ad-hoc',
+      build_path: "./build/ios",
+      output_directory: "./build/ios",
+    )
+  end
+
+  lane :upload_ipa_distribution do |options|
+    firebase_app_distribution(
+      app: '1:1073852357664:ios:7f27e4ea8fd25ceb5eb045',
+      firebase_cli_token: ENV["Firebase_CLI_TOKEN"],
+      release_notes: options[:message].gsub(/##/,"\n"),
+      groups: 'Tester'
+    )
+  end
+end
+
+platform :android do
+   before_all do
+    ENV["Firebase_CLI_TOKEN"] = "1//0e-2P6JXJ4R7gCgYIARAAGA4SNwF-L9Ir0pGfAVDqXpnOAUB6SGC5XQmsODc7OOkfdhbC4q5nskHQH_0Hb-sQbHlUHWh24yUINps"
+  end
+  desc "Push a new release apk file to the Firebase distribution"
+  lane :build_dev do |options|
+    build_apk_dev()
+    upload_apk_distribution(options)
+  end
+
+  lane :build_apk_dev do
+    gradle(
+      task: 'assemble',
+      flavor: 'Develop',
+      build_type: 'Release', 
+      project_dir: './android'
+    )
+  end
+
+  desc "Upload android to Firebase"
+  lane :upload_apk_distribution do |options|
+    firebase_app_distribution(
+      app: "1:1073852357664:android:c95a4c70fe2ebcfd5eb045",
+      firebase_cli_token: ENV["Firebase_CLI_TOKEN"],
+      release_notes: options[:message].gsub(/##/,"\n"),
+      groups: 'Tester'
+    )
+  end
+end

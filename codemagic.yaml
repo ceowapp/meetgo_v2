@@ -1,0 +1,78 @@
+workflows:
+  ios-release-build:
+    name: iOS Release Build
+    environment:
+      vars:
+        XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
+        XCODE_SCHEME: "meetgo"
+        IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install --legacy-peer-deps
+          cd ios && pod install && cd ..
+      - name: Update Pod targets
+        script: |
+          cd ios
+          # Update any potential deployment target mismatches in Pods
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          cd ..
+      - name: Generate exportOptions.plist
+        script: |
+          cat > ios/exportOptions.plist << EOL
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOL
+      - name: Build iOS app with verbose output
+        script: |
+          mkdir -p build
+          set -x  # Enable verbose output
+          xcodebuild clean \
+          -workspace "$XCODE_WORKSPACE" \
+          -scheme "$XCODE_SCHEME" \
+          -configuration Release
+          
+          xcodebuild \
+          -workspace "$XCODE_WORKSPACE" \
+          -scheme "$XCODE_SCHEME" \
+          -configuration Release \
+          -sdk iphoneos \
+          -archivePath build/meetgo.xcarchive \
+          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
+          OTHER_CODE_SIGN_FLAGS="--keychain build.keychain" \
+          CODE_SIGN_IDENTITY="Apple Development" \
+          -allowProvisioningUpdates \
+          archive -verbose
+          
+          # Check if archive was created
+          if [ -d "build/meetgo.xcarchive" ]; then
+            echo "Archive created successfully"
+            xcodebuild \
+            -exportArchive \
+            -archivePath build/meetgo.xcarchive \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath build/ios \
+            -allowProvisioningUpdates \
+            -verbose
+          else
+            echo "Archive creation failed"
+            exit 1
+          fi
+    artifacts:
+      - build/ios/*.ipa

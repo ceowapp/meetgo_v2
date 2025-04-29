@@ -1,0 +1,10 @@
+//
+//  EnvConfig.xcconfig
+//  meetgo
+//r
+//  Created by Dao Nguyen Hoang Nam on 28/07/2023.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+#include? "tmp.xcconfig"

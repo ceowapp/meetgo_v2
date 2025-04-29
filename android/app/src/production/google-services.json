@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "942316394462",
+    "firebase_url": "https://meetgo-product-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "meetgo-product",
+    "storage_bucket": "meetgo-product.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:942316394462:android:c14001e95063f1b2b4af4f",
+        "android_client_info": {
+          "package_name": "app.meetgo.vn"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "942316394462-bous3tos2mbounqpgab9s5el82re9umh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.meetgo.vn",
+            "certificate_hash": "c08ca1abc8cbe08f0b4a99e7f9513c7543a0c152"
+          }
+        },
+        {
+          "client_id": "942316394462-ogqj274ppatdsbv8a08o4825vt56m1km.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCooaGGTErM2ViMC83Z4HNtFoty1CO_rNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "942316394462-ogqj274ppatdsbv8a08o4825vt56m1km.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "942316394462-8ubph3e8vmetlh7gbjb1q7mmutqpe4i4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.meetgo.vn"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
