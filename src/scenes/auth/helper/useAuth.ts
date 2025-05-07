@@ -18,7 +18,7 @@ import Platform from 'utils/Platform';
 import {IResponseType, IStatus} from 'constant/commonType';
 import jwtDecode from 'jwt-decode';
 import config from 'react-native-config';
-import DeepLink from 'utils/DeepLink';
+import DeepLink from 'services/deeplink';
 import { useTranslation } from 'react-i18next';
 
 const useAuth = () => {

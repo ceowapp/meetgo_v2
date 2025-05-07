@@ -6,6 +6,7 @@ import {
   MD3DarkTheme,
   PaperProvider,
 } from 'react-native-paper';
+import appsFlyer from 'react-native-appsflyer';
 import {NavigationContainer, DefaultTheme} from '@react-navigation/native';
 import {Provider} from 'react-redux';
 import {PersistGate} from 'redux-persist/lib/integration/react';
@@ -27,10 +28,9 @@ import {enableLatestRenderer} from 'react-native-maps';
 import GlobalModal from 'services/globalModal';
 import MyLocation from 'services/location/MyLocation';
 import ForceUpdateApp from 'services/forceUpdate';
-import UpdateManager from 'manager/updateManager';
+import AdManager from 'manager/adManager';
 import { I18nextProvider } from 'react-i18next';
-import appsFlyer from 'react-native-appsflyer';
-import DeepLink from 'utils/DeepLink';
+import DeepLink from 'services/deeplink';
 import i18n from './i18n';
 
 Platform.isAndroid && enableLatestRenderer();
@@ -42,11 +42,20 @@ const {LightTheme} = adaptNavigationTheme({reactNavigationLight: DefaultTheme});
 
 export default function App() {
   useEffect(() => {
-    DeepLink.init();
+    initializeServices();
     return () => {
       appsFlyer.stop();
     };
   }, []);
+
+  const initializeServices = async () => {
+    try {
+      DeepLink.init();
+      await AdManager.initialize();
+    } catch (error) {
+      console.error('Error initializing services:', error);
+    }
+  };
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -65,7 +74,6 @@ export default function App() {
                     <MyLocation />
                   </ToastContextProvider>
                   <ForceUpdateApp />
-                  <UpdateManager />
                 </CommonManager>
               </SafeAreaProvider>
             </NavigationContainer>

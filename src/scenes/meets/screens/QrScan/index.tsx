@@ -2,13 +2,12 @@ import {useIsFocused} from '@react-navigation/native';
 import BarcodeMask from 'components/BarcodeMask';
 import useToast from 'components/Toast/useToast';
 import appConstant from 'constant/appConstant';
-import LottieView from 'lottie-react-native';
 import {navigateScreen} from 'navigation/RootNavigation';
 import {STACK_NAVIGATOR} from 'navigation/types';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, Linking, StatusBar} from 'react-native';
-import {Button, Text} from 'react-native-paper';
-import {Camera, useCameraDevices} from 'react-native-vision-camera';
+import {Text} from 'react-native-paper';
+import {Camera, useCameraDevice, useCameraPermission, useCodeScanner} from 'react-native-vision-camera';
 import {AuthSelector} from 'scenes/auth/redux/slice';
 import {useMeet} from 'scenes/meets/helper/useMeet';
 import {useAppSelector} from 'storeConfig/hook';
@@ -16,7 +15,6 @@ import Images from 'utils/Images';
 import Screen, {perHeight, perWidth, resFont, resWidth} from 'utils/Screen';
 import {COLORS, SPACING} from 'utils/styleGuide';
 import {useEffectAfterTransition} from 'utils/Utility';
-import {useScanBarcodes, BarcodeFormat} from 'vision-camera-code-scanner';
 import {IQrUserInfo} from '../UserScan/types';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -37,85 +35,71 @@ const viewFinderBounds = {
 
 const QrScan = () => {
   const { t } = useTranslation();
-  const [hasPermission, setHasPermission] = useState<boolean | 'initial'>(
-    'initial',
-  );
   const account = useAppSelector(AuthSelector.getAccount);
   const {addToast} = useToast();
   const isFocus = useIsFocused();
-  const devices = useCameraDevices();
-  const device = devices.back;
-  const [frameProcessor, barcodes] = useScanBarcodes([BarcodeFormat.QR_CODE], {
-    checkInverted: true,
-  });
+  const camera = useRef(null);
+  
+  // Updated camera permissions hook
+  const { hasPermission, requestPermission } = useCameraPermission();
+  
+  // Updated camera device hook
+  const device = useCameraDevice('back');
+  
   const currentLocation = useAppSelector(locationSelector.getCurentLocation);
   const {bottom} = useSafeAreaInsets();
 
   const {listLocationNearBy, getListLocationMeetNearByMe} = useMeet();
   const dataFakeLocation = useAppSelector(locationSelector.getDataFakeLocation);
   const hasLocationNearBy = listLocationNearBy.length > 0 || !!dataFakeLocation;
-  const requestCameraPermission = async () => {
-    const resultPermission = await Camera.requestCameraPermission();
-    setHasPermission(resultPermission === 'authorized');
-  };
 
-  // const onNavigateMeetUser = () => {
-  //   const qrInfo = {
-  //     idAuth: '105019288835455626238',
-  //     email: 'hoangnam1121@gmail.com',
-  //     firstname: 'Dao',
-  //     lastname: 'Nam',
-  //     createdAt: '08-08-2023',
-  //     birthday: '17-08-2023',
-  //     address: '',
-  //     mobilenumber: '0987654321',
-  //     gender: 'male',
-  //     isFirst: true,
-  //     isVerify: false,
-  //     photo:
-  //       'https://lh3.googleusercontent.com/a/AAcHTtfXpP1oy6m4stQPK2qYrbDJ2ClYdsObaQhmeHWCYy-h1rE=s120',
-  //     pincode: '',
-  //     balanceCreateLocation: 0,
-  //     account: 'MGA-00001079',
-  //     appKey: 'com.app.meetgo',
-  //   };
-  //   navigateScreen(STACK_NAVIGATOR.USER_SCAN, {
-  //     qrInfo,
-  //   });
-  // };
+  // Using the built-in code scanner from react-native-vision-camera
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr'],
+    onCodeScanned: (codes) => {
+      if (codes.length > 0 && codes[0].value) {
+        try {
+          const dataQrCode = JSON.parse(codes[0].value) as IQrUserInfo;
+          if (dataQrCode.appKey === appConstant.KEY_APP) {
+            if (dataQrCode.account === account) {
+              addToast({
+                message: t('meets.error_self_meet'),
+                type: 'ERROR_V3',
+                position: 'top',
+              });
+            } else {
+              navigateScreen(STACK_NAVIGATOR.USER_SCAN, {
+                qrInfo: dataQrCode,
+              });
+            }
+          } else {
+            addToast({
+              message: t('meets.error_invalid_qr'),
+              type: 'ERROR_V3',
+              position: 'top',
+            });
+          }
+        } catch (error) {
+          addToast({
+            message: t('meets.error_invalid_qr'),
+            type: 'ERROR_V3',
+            position: 'top',
+          });
+        }
+      }
+    }
+  });
 
   useEffect(() => {
     if (currentLocation?.latitude && currentLocation.longitude) {
       getListLocationMeetNearByMe(currentLocation);
     }
   }, [currentLocation]);
-
-  useEffect(() => {
-    if (barcodes && barcodes[0]?.rawValue) {
-      const dataQrCode = JSON.parse(barcodes[0].rawValue) as IQrUserInfo;
-      if (dataQrCode.appKey === appConstant.KEY_APP) {
-        if (dataQrCode.account === account) {
-          addToast({
-            message: t('meets.error_self_meet'),
-            type: 'ERROR_V3',
-            position: 'top',
-          });
-        } else {
-          navigateScreen(STACK_NAVIGATOR.USER_SCAN, {
-            qrInfo: dataQrCode,
-          });
-        }
-      } else {
-        addToast({
-          message: t('meets.error_invalid_qr'),
-          type: 'ERROR_V3',
-          position: 'top',
-        });
-      }
-    }
-  }, [barcodes]);
+  
   useEffectAfterTransition((): ReturnType<any> => {
-    requestCameraPermission();
+    if (!hasPermission) {
+      requestPermission();
+    }
     StatusBar.setBarStyle('light-content');
   }, []);
 
@@ -168,33 +152,23 @@ const QrScan = () => {
     );
   }
 
-  // if (device == null) {
-  //   return <View style={styles.container} />;
-  //   return (
-  //     <View style={styles.container}>
-  //       <Button
-  //         mode="elevated"
-  //         style={{marginTop: SPACING.s_12}}
-  //         onPress={onNavigateMeetUser}>
-  //         Fake scan qr
-  //       </Button>
-  //     </View>
-  //   );
-  // }
+  if (!device) {
+    return <View style={styles.container} />;
+  }
 
   return (
     <View style={styles.container}>
-      {device && (
-        <Camera
-          style={StyleSheet.absoluteFill}
-          device={device}
-          isActive={isFocus}
-          orientation="portrait"
-          focusable
-          frameProcessor={frameProcessor}
-          frameProcessorFps={5}
-        />
-      )}
+      <Camera
+        ref={camera}
+        style={StyleSheet.absoluteFill}
+        device={device}
+        isActive={isFocus}
+        orientation="portrait"
+        photo={false}
+        video={false}
+        audio={false}
+        codeScanner={codeScanner}
+      />
       {renderNearLocation()}
       <BarcodeMask
         width={viewFinderBounds.width}
