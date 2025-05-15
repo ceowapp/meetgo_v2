@@ -14,6 +14,17 @@ export default {
     referral_list: "قائمة الإحالات",
     language: 'اللغة'
   },
+  update: {
+    status_process_checking: 'جارٍ التحقق من التحديثات',
+    status_process_downloading: 'جارٍ التنزيل',
+    status_process_awaiting: 'في انتظار الإجراء',
+    status_process_installing: 'جارٍ تثبيت التحديث',
+    status_process_up_to_date: 'محدث إلى آخر إصدار',
+    status_process_update_installed: 'اكتمل التحديث',
+    status_process_default: 'جارٍ التحديث',
+    progress_text: 'يتم تحديث التطبيق إلى أحدث إصدار. الرجاء الانتظار حتى يكتمل التحديث.',
+    error_rate_limit: 'تم تقييد عملية التحديث. الرجاء المحاولة لاحقًا.',
+  },
   auth: {
     loginFailed: 'فشل في المصادقة، يرجى المحاولة مرة أخرى',
     loginSuccess: 'تم تسجيل الدخول بنجاح',

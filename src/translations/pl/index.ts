@@ -14,6 +14,17 @@ export default {
     referral_list: "Lista poleceń",
     language: 'Język'
   },
+  update: {
+    status_process_checking: 'Sprawdzanie aktualizacji',
+    status_process_downloading: 'Pobieranie',
+    status_process_awaiting: 'Oczekiwanie na działanie',
+    status_process_installing: 'Instalowanie aktualizacji',
+    status_process_up_to_date: 'Aktualne',
+    status_process_update_installed: 'Aktualizacja zakończona',
+    status_process_default: 'Aktualizowanie',
+    progress_text: 'Aplikacja jest aktualizowana do najnowszej wersji. Proszę czekać, aż proces zostanie zakończony.',
+    error_rate_limit: 'Proces aktualizacji został ograniczony. Proszę spróbować ponownie później.',
+  },
   auth: {
     loginFailed: 'Autoryzacja nie powiodła się, spróbuj ponownie.',
     loginSuccess: 'Logowanie powiodło się.',

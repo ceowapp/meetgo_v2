@@ -14,6 +14,17 @@ export default {
     referral_list: "रेफरल सूची",
     language: 'भाषा'
   },
+  update: {
+    status_process_checking: 'अपडेट की जांच की जा रही है',
+    status_process_downloading: 'डाउनलोड हो रहा है',
+    status_process_awaiting: 'कार्रवाई की प्रतीक्षा',
+    status_process_installing: 'अपडेट इंस्टॉल किया जा रहा है',
+    status_process_up_to_date: 'नवीनतम संस्करण तक अपडेट किया गया',
+    status_process_update_installed: 'अपडेट पूरा हो गया है',
+    status_process_default: 'अपडेट किया जा रहा है',
+    progress_text: 'एप्लिकेशन को नवीनतम संस्करण में अपडेट किया जा रहा है। कृपया प्रक्रिया पूरी होने तक प्रतीक्षा करें।',
+    error_rate_limit: 'अपडेट प्रक्रिया सीमित कर दी गई है। कृपया बाद में पुनः प्रयास करें।',
+  },
   auth: {
     loginFailed: 'प्रमाणीकरण विफल, कृपया पुनः प्रयास करें',
     loginSuccess: 'सफलता से लॉगिन किया',

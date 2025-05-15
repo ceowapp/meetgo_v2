@@ -14,6 +14,17 @@ export default {
     referral_list: "Elenco Referral",
     language: 'Lingua'
   },
+  update: {
+    status_process_checking: 'Verifica aggiornamenti',
+    status_process_downloading: 'Download in corso',
+    status_process_awaiting: 'In attesa di azione',
+    status_process_installing: 'Installazione aggiornamento',
+    status_process_up_to_date: 'Aggiornato all’ultima versione',
+    status_process_update_installed: 'Aggiornamento completato',
+    status_process_default: 'Aggiornamento in corso',
+    progress_text: "L'applicazione si sta aggiornando all’ultima versione. Attendere il completamento del processo.",
+    error_rate_limit: "Il processo di aggiornamento è limitato. Riprova più tardi.",
+  },
   auth: {
     loginFailed: 'Autenticazione fallita, per favore riprova',
     loginSuccess: 'Accesso riuscito',

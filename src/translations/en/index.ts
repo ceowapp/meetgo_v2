@@ -14,6 +14,17 @@ export default {
     referral_list: "Referral List",
     language: 'Language'
   },
+    update: {
+    status_process_checking: 'Checking for updates',
+    status_process_downloading: 'Downloading',
+    status_process_awaiting: 'Awaiting action',
+    status_process_installing: 'Installing update',
+    status_process_up_to_date: 'Up to date',
+    status_process_update_installed: 'Update complete',
+    status_process_default: 'Updating',
+    progress_text: 'The application is updating to the latest version. Please wait until the process is complete.',
+    error_rate_limit: 'Update process is rate-limited. Please try again later.',
+  },
   auth: {
     loginFailed: 'Authentication failed, please try again',
     loginSuccess: 'Login successful',

@@ -36,11 +36,9 @@ const Intro = (): ReactElement => {
   const {onSignInApple, onSignInGoogle, onSiginAndroidApple, loading} =
     useAuth();
   const scrollHandler = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const valueRound = event.nativeEvent.contentOffset.x % widthContainerDot;
-    if (valueRound === 0) {
-      const nextIndex = event.nativeEvent.contentOffset.x / widthContainerDot;
-      index.value = nextIndex;
-    }
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const nextIndex = Math.round(contentOffset / widthContainerDot);
+    index.value = nextIndex;
   };
   const INTRO = [
     {

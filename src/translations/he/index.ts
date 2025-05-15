@@ -14,6 +14,17 @@ export default {
     referral_list: "רשימת הפניות",
     language: 'שפה'
   },
+  update: {
+    status_process_checking: 'בודק עדכונים',
+    status_process_downloading: 'מוריד',
+    status_process_awaiting: 'ממתין לפעולה',
+    status_process_installing: 'מתקין עדכון',
+    status_process_up_to_date: 'מעודכן לגרסה האחרונה',
+    status_process_update_installed: 'העדכון הושלם',
+    status_process_default: 'מעדכן',
+    progress_text: 'היישום מתעדכן לגרסה העדכנית ביותר. אנא המתן עד לסיום התהליך.',
+    error_rate_limit: 'תהליך העדכון מוגבל. אנא נסה שוב מאוחר יותר.',
+  },
   auth: {
     loginFailed: 'הזדהות נכשלה, אנא נסה שוב',
     loginSuccess: 'התחברות הצליחה',

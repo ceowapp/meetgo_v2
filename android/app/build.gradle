@@ -122,12 +122,16 @@ android {
         develop {
             dimension 'env'
             signingConfig signingConfigs.debug
-            resValue "string", "admobAppId", "ca-app-pub-3940256099942544~3347511713"
+            resValue "string", "admobAppId", project.env.get("ADMOB_APP_ID")
+            resValue "string", "CodePushDeploymentKey", project.env.get("DEPLOYMENT_KEY_ANDROID")
+            resValue "string", "CodePushServerUrl", project.env.get("CODE_PUSH_SERVER_URL")
         }
         production {
             dimension 'env'
             signingConfig signingConfigs.release
             resValue "string", "admobAppId", project.env.get("ADMOB_APP_ID")
+            resValue "string", "CodePushDeploymentKey", project.env.get("DEPLOYMENT_KEY_ANDROID")
+            resValue "string", "CodePushServerUrl", project.env.get("CODE_PUSH_SERVER_URL")
         }
     }
 
@@ -219,7 +223,8 @@ dependencies {
 
     implementation "com.facebook.fresco:animated-gif:2.6.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-    
+    apply from: "../../node_modules/react-native-code-push/android/codepush.gradle"
+
     if (enableHermes) {
         implementation("com.facebook.react:hermes-android")
     } else {

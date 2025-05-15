@@ -14,6 +14,17 @@ export default {
     referral_list: "รายการแนะนำ",
     language: 'ภาษา'
   },
+  update: {
+    status_process_checking: 'กำลังตรวจสอบการอัปเดต',
+    status_process_downloading: 'กำลังดาวน์โหลด',
+    status_process_awaiting: 'รอการดำเนินการ',
+    status_process_installing: 'กำลังติดตั้งการอัปเดต',
+    status_process_up_to_date: 'เป็นเวอร์ชันล่าสุดแล้ว',
+    status_process_update_installed: 'อัปเดตเสร็จสมบูรณ์',
+    status_process_default: 'กำลังอัปเดต',
+    progress_text: 'แอปกำลังอัปเดตเป็นเวอร์ชันล่าสุด กรุณารอจนกว่ากระบวนการจะเสร็จสิ้น',
+    error_rate_limit: 'กระบวนการอัปเดตถูกจำกัด โปรดลองใหม่อีกครั้งในภายหลัง',
+  },
   auth: {
     loginFailed: 'การตรวจสอบสิทธิ์ล้มเหลว กรุณาลองอีกครั้ง.',
     loginSuccess: 'เข้าสู่ระบบสำเร็จ.',

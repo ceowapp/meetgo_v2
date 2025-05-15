@@ -14,6 +14,17 @@ export default {
     referral_list: "Verwijzingslijst",
     language: 'Taal'
   },
+  update: {
+    status_process_checking: 'Updates zoeken',
+    status_process_downloading: 'Bezig met downloaden',
+    status_process_awaiting: 'Wachten op actie',
+    status_process_installing: 'Update installeren',
+    status_process_up_to_date: 'Up-to-date',
+    status_process_update_installed: 'Update voltooid',
+    status_process_default: 'Bezig met bijwerken',
+    progress_text: 'De applicatie wordt bijgewerkt naar de nieuwste versie. Wacht alstublieft tot het proces is voltooid.',
+    error_rate_limit: 'Het updateproces is beperkt. Probeer het later opnieuw.',
+  },
   auth: {
     loginFailed: 'Authenticatie is mislukt, probeer het opnieuw.',
     loginSuccess: 'Inloggen is gelukt.',

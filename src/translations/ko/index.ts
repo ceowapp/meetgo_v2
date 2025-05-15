@@ -14,6 +14,17 @@ export default {
     referral_list: "추천 목록",
     language: '언어'
   },
+  update: {
+    status_process_checking: '업데이트 확인 중',
+    status_process_downloading: '다운로드 중',
+    status_process_awaiting: '작업 대기 중',
+    status_process_installing: '업데이트 설치 중',
+    status_process_up_to_date: '최신 버전입니다',
+    status_process_update_installed: '업데이트가 완료되었습니다',
+    status_process_default: '업데이트 중',
+    progress_text: '앱이 최신 버전으로 업데이트되고 있습니다. 완료될 때까지 기다려 주세요.',
+    error_rate_limit: '업데이트가 제한되었습니다. 나중에 다시 시도해 주세요.',
+  },
   auth: {
     loginFailed: '인증에 실패했습니다. 다시 시도해 주세요.',
     loginSuccess: '로그인에 성공했습니다.',

@@ -14,6 +14,17 @@ export default {
     referral_list: "紹介リスト",
     language: '言語'
   },
+  update: {
+    status_process_checking: 'アップデートを確認しています',
+    status_process_downloading: 'ダウンロード中',
+    status_process_awaiting: '操作待ち',
+    status_process_installing: 'アップデートをインストールしています',
+    status_process_up_to_date: '最新バージョンです',
+    status_process_update_installed: 'アップデートが完了しました',
+    status_process_default: 'アップデート中',
+    progress_text: 'アプリケーションは最新バージョンに更新されています。処理が完了するまでお待ちください。',
+    error_rate_limit: 'アップデート処理が制限されています。後でもう一度お試しください。',
+  },
   auth: {
     loginFailed: '認証に失敗しました。もう一度お試しください。',
     loginSuccess: 'ログインに成功しました。',

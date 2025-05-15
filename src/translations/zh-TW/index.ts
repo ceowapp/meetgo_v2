@@ -14,6 +14,17 @@ export default {
     referral_list: "推薦列表",
     language: '語言'
   },
+  update: {
+    status_process_checking: '正在檢查更新',
+    status_process_downloading: '正在下載',
+    status_process_awaiting: '等待操作',
+    status_process_installing: '正在安裝更新',
+    status_process_up_to_date: '已是最新版本',
+    status_process_update_installed: '更新完成',
+    status_process_default: '正在更新',
+    progress_text: '應用程式正在更新到最新版本，請等待完成。',
+    error_rate_limit: '更新操作受限，請稍後再試。',
+  },
   auth: {
     loginFailed: '身份驗證失敗，請重試。',
     loginSuccess: '登入成功。',

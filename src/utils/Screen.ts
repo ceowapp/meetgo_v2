@@ -3,7 +3,7 @@ import ExtraDimensions from 'react-native-extra-dimensions-android';
 import Platform from './Platform';
 import DeviceInfo from 'react-native-device-info';
 import {LinearGradientProps} from 'react-native-linear-gradient';
-import {COLORS} from './styleGuide';
+import COLORS from 'services/themes/colors';
 
 const {width, height} = Dimensions.get('window');
 const {height: heightDevice} = Dimensions.get('screen');

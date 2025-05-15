@@ -14,6 +14,17 @@ export default {
     referral_list: "Liste des références",
     language: 'Langue'
   },
+  update: {
+    status_process_checking: 'Vérification des mises à jour',
+    status_process_downloading: 'Téléchargement en cours',
+    status_process_awaiting: 'En attente d’action',
+    status_process_installing: 'Installation de la mise à jour',
+    status_process_up_to_date: 'Déjà à jour',
+    status_process_update_installed: 'Mise à jour terminée',
+    status_process_default: 'Mise à jour en cours',
+    progress_text: 'L’application est en cours de mise à jour vers la dernière version. Veuillez patienter jusqu’à la fin du processus.',
+    error_rate_limit: 'Le processus de mise à jour est limité. Veuillez réessayer plus tard.',
+  },
   auth: {
     loginFailed: 'Échec de l\'authentification, veuillez réessayer',
     loginSuccess: 'Connexion réussie',

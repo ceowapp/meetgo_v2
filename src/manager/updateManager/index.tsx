@@ -1,6 +1,10 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {StyleSheet, Dimensions, AppState, AppStateStatus, Text} from 'react-native';
-import * as Updates from 'expo-updates';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
+import {StyleSheet, Dimensions, AppState, AppStateStatus} from 'react-native';
+import CodePush, {
+  DownloadProgress,
+  RemotePackage,
+} from 'react-native-code-push';
+/** utils */
 import {usePrevious} from 'utils/Utility';
 import {perWidth, resFont, resWidth} from 'utils/Screen';
 import Animated, {
@@ -8,34 +12,30 @@ import Animated, {
   useAnimatedProps,
   withTiming,
   Easing,
+  useAnimatedStyle,
+  runOnJS,
 } from 'react-native-reanimated';
+
 import Svg, {Line} from 'react-native-svg';
 import {COLORS, SPACING} from 'utils/styleGuide';
+import { useTranslation } from 'react-i18next';
 
 enum UpdateMode {
   NONE = 'NONE',
   STORE = 'STORE',
-  UPDATE = 'UPDATE',
+  CODE_PUSH = 'CODE_PUSH',
   RATE_LIMIT = 'RATE_LIMIT',
 }
 
 interface InitState {
   isVisible: boolean;
   updateMode: typeof UpdateMode[keyof typeof UpdateMode];
-  updateDescription: string;
+  codePushDescription: string;
   currentProgress: number;
   statusProcess: string;
   isUpdate: boolean;
+  progressCompleted: boolean;
 }
-
-const initState: InitState = {
-  isVisible: false,
-  updateMode: UpdateMode.NONE,
-  updateDescription: '',
-  currentProgress: 0,
-  statusProcess: 'Đang cập nhật',
-  isUpdate: false,
-};
 
 const STROKE_COLOR = COLORS.green;
 
@@ -65,171 +65,174 @@ const styles = StyleSheet.create({
   },
   statusText: {
     textAlign: 'center',
-    marginVertical: 5,
-  },
+  }
 });
 
 const UpdateManager: React.FC = () => {
+  const { t } = useTranslation();
+  
+  const initState: InitState = {
+    isVisible: false,
+    updateMode: UpdateMode.NONE,
+    codePushDescription: '',
+    currentProgress: 0,
+    statusProcess: t('update.status_process_default'),
+    isUpdate: false,
+    progressCompleted: false,
+  };
+  
   const [state, setState] = useState<InitState>(initState);
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
-  const translateY = useSharedValue(-110); // Start offscreen
+  const [appState, setAppState] = useState<AppStateStatus | undefined>();
+  const translateY = useSharedValue(-110);
+  const progress = useSharedValue(0);
   const lastUpdateMode = usePrevious(state.updateMode);
   const lastAppState = usePrevious(appState);
-  const updateObject = useRef<any>(null);
-  const [updatesEnabled, setUpdatesEnabled] = useState<boolean>(false);
-  const progress = useSharedValue(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const remotePackage = useRef<RemotePackage | null>(null);
 
-  useEffect(() => {
-    const initializeUpdates = async () => {
-      try {
-        if (!Updates || typeof Updates.checkForUpdateAsync !== 'function') {
-          console.warn('Expo Updates module not properly initialized');
-          setUpdatesEnabled(false);
-          return;
-        }
-        setUpdatesEnabled(true);
-        checkForUpdate().catch(err => 
-          console.error('Initial update check failed:', err)
-        );
-      } catch (error) {
-        console.error('Error initializing Expo Updates:', error);
-        setUpdatesEnabled(false);
-      }
-    };
-    initializeUpdates();
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
+  const onProgressComplete = useCallback(() => {
+    setState(prev => ({...prev, progressCompleted: true}));
   }, []);
 
-  const checkForUpdate = async () => {
-    if (!updatesEnabled) return;
+  const checkCodePush = async () => {
     try {
-      console.log('------- Expo Updates check for Update -------');
-      updateStatusDidChange('checking');
-      const update = await Updates.checkForUpdateAsync();
-      updateObject.current = update;
-      console.log('checkForUpdate', update);
-      if (!update.isAvailable) {
-        console.log('------- Expo Updates have no Update -------');
-        updateStatusDidChange('up-to-date');
+      console.log('------- CodePush check for Update -------');
+      const update = await CodePush.checkForUpdate();
+      remotePackage.current = update;
+      console.log('checkCodePush', update);
+      
+      if (!update) {
+        console.log('------- CodePush have no Update -------');
         setState(prev => ({...prev, updateMode: UpdateMode.NONE}));
         return;
       }
-      console.log('------- Expo Updates have an Update -------');
-      setState(prev => ({...prev, updateMode: UpdateMode.UPDATE}));
-    } catch (error) {
-      console.warn('Updates.checkForUpdateError', error);
-      handleUpdateError(error);
-    }
-  };
 
-  const handleUpdateError = (error: any) => {
-    try {
-      let errorMessage = '';
-      if (typeof error === 'object' && error !== null) {
-        errorMessage = (error as Error).message || JSON.stringify(error);
+      console.log('------- CodePush have a Update -------');
+      const {isMandatory} = update;
+      if (isMandatory) {
+        setState(prev => ({...prev, updateMode: UpdateMode.CODE_PUSH, progressCompleted: false}));
+      } else if (update.failedInstall) {
+        const local = await update.download();
+        if (local) {
+          await local.install(CodePush.InstallMode.ON_NEXT_RESUME);
+        }
       } else {
-        errorMessage = String(error);
+        CodePush.disallowRestart();
+        await CodePush.sync({
+          installMode: CodePush.InstallMode.ON_NEXT_RESUME,
+          mandatoryInstallMode: CodePush.InstallMode.IMMEDIATE,
+        });
+        CodePush.allowRestart();
       }
-      if (errorMessage.includes('{') && errorMessage.includes('}')) {
-        const jsonStart = errorMessage.indexOf('{');
-        const jsonEnd = errorMessage.lastIndexOf('}') + 1;
-        if (jsonStart >= 0 && jsonEnd > 0) {
-          try {
-            const jsonStr = errorMessage.substring(jsonStart, jsonEnd);
-            const parseData = JSON.parse(jsonStr);
-            if (parseData.statusCode === 429) {
-              setState(prev => ({
-                ...prev,
-                updateMode: UpdateMode.RATE_LIMIT,
-                statusProcess: parseData.message || 'Rate limit reached',
-              }));
-              return;
-            }
-          } catch (jsonError) {
-            console.error('Error parsing JSON from error message:', jsonError);
+    } catch (error) {
+      let errorCp = error as Error;
+      const messageError = errorCp.message as string;
+      try {
+        if (messageError && messageError.length > 4) {
+          const removeStr = messageError.slice(4, messageError.length);
+          const parseData = JSON.parse(removeStr) as {
+            statusCode: number;
+            message: string;
+          };
+          if (parseData.statusCode === 429) {
+            setState(prev => ({
+              ...prev,
+              updateMode: UpdateMode.RATE_LIMIT,
+              statusProcess: t('update.error_rate_limit'),
+            }));
           }
         }
+      } catch (parseError) {
+        console.warn('Error parsing CodePush error:', parseError);
       }
-      setState(prev => ({
-        ...prev,
-        updateMode: UpdateMode.NONE,
-        statusProcess: 'Update check failed',
-      }));
-    } catch (parseError) {
-      console.error('Error handling update error:', parseError);
-      setState(prev => ({
-        ...prev,
-        updateMode: UpdateMode.NONE,
-        statusProcess: 'Update check failed',
-      }));
+
+      console.warn('CodePush.checkForUpdateError', error);
     }
   };
 
-  const updateStatusDidChange = (status: string) => {
-    console.log('------- Expo Updates updateStatusDidChange:', status, '-------');
-    let statusProcess = state.statusProcess;
-    
-    switch (status) {
-      case 'checking':
+  const codePushStatusDidChange = (syncStatus: CodePush.SyncStatus) => {
+    console.log('------- CodePush codePushStatusDidChange -------');
+    let statusProcess = '';
+    switch (syncStatus) {
+      case CodePush.SyncStatus.CHECKING_FOR_UPDATE:
         console.log('CHECKING_FOR_UPDATE');
-        statusProcess = 'Kiểm tra bản cập nhật';
+        statusProcess = t('update.status_process_checking');
         break;
-      case 'downloading':
+      case CodePush.SyncStatus.DOWNLOADING_PACKAGE:
         console.log('DOWNLOADING_PACKAGE');
-        statusProcess = 'Đang tải';
+        statusProcess = t('update.status_process_downloading');
         break;
-      case 'installing':
+      case CodePush.SyncStatus.AWAITING_USER_ACTION:
+        console.log('AWAITING_USER_ACTION');
+        statusProcess = t('update.status_process_awaiting');
+        break;
+      case CodePush.SyncStatus.INSTALLING_UPDATE:
         console.log('INSTALLING_UPDATE');
-        statusProcess = 'Đang cài đặt bản cập nhật';
+        statusProcess = t('update.status_process_installing');
         break;
-      case 'up-to-date':
+      case CodePush.SyncStatus.UP_TO_DATE:
         console.log('UP_TO_DATE');
-        statusProcess = 'Đã cập nhật bản mới nhất';
+        statusProcess = t('update.status_process_up_to_date');
         break;
-      case 'installed':
+      case CodePush.SyncStatus.UPDATE_INSTALLED:
         console.log('UPDATE_INSTALLED');
-        statusProcess = 'Cập nhật hoàn tất';
+        statusProcess = t('update.status_process_update_installed');
         break;
-      case 'error':
+      case CodePush.SyncStatus.SYNC_IN_PROGRESS:
+        console.log('SYNC_IN_PROGRESS');
+        break;
+      case CodePush.SyncStatus.UNKNOWN_ERROR:
         console.log('UNKNOWN_ERROR');
-        statusProcess = 'Cập nhật thất bại';
         break;
       default:
         break;
     }
     
-    setState(prevState => ({...prevState, statusProcess}));
+    if (statusProcess) {
+      setState(prev => ({...prev, statusProcess}));
+    }
   };
 
-  const showUpdate = () => {
+  const codePushDownloadDidProgress = (progressDownload: DownloadProgress) => {
+    console.log('------- CodePush codePushDownloadDidProgress -------');
+    const {receivedBytes, totalBytes} = progressDownload;
+    const temp = receivedBytes / totalBytes;
+    
+    if (temp >= 1) {
+      progress.value = withTiming(1, {
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+      }, () => {
+        runOnJS(onProgressComplete)();
+      });
+    } else {
+      progress.value = temp;
+    }
+  };
+
+  const showUpdate = useCallback(() => {
     translateY.value = withTiming(110, {
       duration: 500,
       easing: Easing.inOut(Easing.ease),
     });
-  };
+  }, [translateY]);
 
-  const hideUpdate = () => {
+  const hideUpdate = useCallback(() => {
     setTimeout(() => {
       translateY.value = withTiming(-110, {
         duration: 500,
         easing: Easing.inOut(Easing.ease),
       });
     }, 1000);
-  };
+  }, [translateY]);
 
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+  const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
     console.log('nextAppState Update manager', nextAppState);
-    if (nextAppState) {
-      setAppState(nextAppState);
-    }
-  };
+    setAppState(nextAppState);
+  }, []);
   
   useEffect(() => {
+    checkCodePush();
+    
     const subscription = AppState.addEventListener(
       'change',
       handleAppStateChange,
@@ -242,96 +245,111 @@ const UpdateManager: React.FC = () => {
 
   useEffect(() => {
     if (
-      updatesEnabled &&
       lastAppState !== appState &&
       (lastAppState === 'background' || lastAppState === 'inactive') &&
       appState === 'active'
     ) {
-      checkForUpdate().catch(err => 
-        console.error('Background update check failed:', err)
-      );
+      checkCodePush();
     }
-  }, [appState, updatesEnabled]);
+  }, [appState, lastAppState]);
 
-  async function handleUpdateManually() {
-    if (!updatesEnabled) return;
+  const handleCodePushManually = useCallback(async () => {
     try {
-      updateStatusDidChange('downloading');
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+      if (!remotePackage.current) return;
+      
+      const localPackage = await remotePackage.current.download(
+        codePushDownloadDidProgress,
+      );
+      
+      if (localPackage) {
+        await localPackage.install(CodePush.InstallMode.IMMEDIATE);
       }
-      progress.value = 0;
-      progressIntervalRef.current = setInterval(() => {
-        progress.value = Math.min(progress.value + 0.05, 0.9);
-      }, 300);
-      await Updates.fetchUpdateAsync();
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-      updateStatusDidChange('installing');
-      progress.value = 1;
-      setTimeout(async () => {
-        try {
-          await Updates.reloadAsync();
-        } catch (reloadError) {
-          console.error('Error reloading app:', reloadError);
-          updateStatusDidChange('error');
-        }
-      }, 1000);
     } catch (e) {
-      console.log('handleUpdateManually error', e);
-      updateStatusDidChange('error');
-      progress.value = 0;
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
+      console.log('handleCodePushManually', e);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const {updateMode} = state;
-    if (updatesEnabled && updateMode === UpdateMode.UPDATE && updateMode !== lastUpdateMode) {
+    if (updateMode === UpdateMode.CODE_PUSH && updateMode !== lastUpdateMode) {
       showUpdate();
-      handleUpdateManually().catch(err => 
-        console.error('Error handling update manually:', err)
-      );
+      if (remotePackage?.current?.failedInstall) {
+        handleCodePushManually();
+      } else {
+        runProgressCodepush();
+      }
     }
-  }, [state.updateMode, updatesEnabled]);
+  }, [state.updateMode, lastUpdateMode, showUpdate, handleCodePushManually]);
 
   useEffect(() => {
-    if (progress.value === 1) {
+    if (state.progressCompleted) {
       hideUpdate();
     }
-  }, [progress.value]);
+  }, [state.progressCompleted, hideUpdate]);
+
+  const runProgressCodepush = useCallback(async () => {
+    try {
+      const codePushOptions = {
+        installMode: CodePush.InstallMode.ON_NEXT_RESTART,
+        mandatoryInstallMode: CodePush.InstallMode.IMMEDIATE,
+      };
+      
+      CodePush.disallowRestart();
+      await CodePush.sync(
+        codePushOptions,
+        codePushStatusDidChange,
+        codePushDownloadDidProgress,
+      );
+      CodePush.allowRestart();
+    } catch (error) {
+      try {
+        let errorCp = error as Error;
+        const messageError = errorCp.message as string;
+        
+        if (messageError && messageError.length > 4) {
+          const removeStr = messageError.slice(4, messageError.length);
+          const parseData = JSON.parse(removeStr) as {
+            statusCode: number;
+            message: string;
+          };
+          
+          if (parseData?.statusCode === 429) {
+            setState(prev => ({
+              ...prev,
+              updateMode: UpdateMode.RATE_LIMIT,
+              statusProcess: t('update.error_rate_limit'),
+            }));
+          }
+        }
+      } catch (errorParse) {
+        console.error(errorParse);
+      }
+    }
+  }, [t]);
+
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateY: translateY.value}],
+    };
+  });
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: width - width * progress.value,
   }));
-  
+
   const colorMessage =
     state.updateMode !== UpdateMode.RATE_LIMIT ? STROKE_COLOR : COLORS.error;
-    
-  if (!updatesEnabled) return null;
 
   return (
-    <Animated.View 
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY: translateY }]
-        }
-      ]}
-    >
+    <Animated.View style={[styles.container, animatedContainerStyle]}>
       {state.updateMode !== UpdateMode.RATE_LIMIT && (
-        <Text style={styles.updateText}>
-          Ứng dụng đang cập nhật phiên bản mới, vui lòng chờ đến khi hoàn thành
-        </Text>
+        <Animated.Text style={styles.updateText}>
+          {t('update.progress_text')}
+        </Animated.Text>
       )}
-      <Text style={[styles.statusText, {color: colorMessage}]}>
+      <Animated.Text style={[styles.statusText, {color: colorMessage}]}>
         {state.statusProcess}
-      </Text>
+      </Animated.Text>
       <Svg>
         <AnimatedLine
           x1="0"
@@ -349,4 +367,9 @@ const UpdateManager: React.FC = () => {
   );
 };
 
-export default UpdateManager;
+const codePushOptions = {
+  checkFrequency: CodePush.CheckFrequency.MANUAL,
+  updateDialog: false,
+};
+
+export default CodePush(codePushOptions)(UpdateManager);

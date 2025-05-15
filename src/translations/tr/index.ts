@@ -14,6 +14,17 @@ export default {
     referral_list: "Referans Listesi",
     language: 'Dil'
   },
+  update: {
+    status_process_checking: 'Güncellemeler kontrol ediliyor',
+    status_process_downloading: 'İndiriliyor',
+    status_process_awaiting: 'Eylem bekleniyor',
+    status_process_installing: 'Güncelleme kuruluyor',
+    status_process_up_to_date: 'En son sürüme güncel',
+    status_process_update_installed: 'Güncelleme tamamlandı',
+    status_process_default: 'Güncelleniyor',
+    progress_text: 'Uygulama en son sürüme güncelleniyor. Lütfen işlem tamamlanana kadar bekleyin.',
+    error_rate_limit: 'Güncelleme işlemi sınırlandırıldı. Lütfen daha sonra tekrar deneyin.',
+  },
   auth: {
     loginFailed: 'Kimlik doğrulama başarısız, lütfen tekrar deneyin.',
     loginSuccess: 'Giriş başarılı.',

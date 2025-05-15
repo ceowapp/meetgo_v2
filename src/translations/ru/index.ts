@@ -14,6 +14,17 @@ export default {
     referral_list: "Список рефералов",
     language: 'Язык'
   },
+  update: {
+    status_process_checking: 'Проверка обновлений',
+    status_process_downloading: 'Загрузка',
+    status_process_awaiting: 'Ожидание действия',
+    status_process_installing: 'Установка обновления',
+    status_process_up_to_date: 'Обновлено до последней версии',
+    status_process_update_installed: 'Обновление завершено',
+    status_process_default: 'Обновление',
+    progress_text: 'Приложение обновляется до последней версии. Пожалуйста, дождитесь завершения процесса.',
+    error_rate_limit: 'Процесс обновления ограничен. Пожалуйста, попробуйте позже.',
+  },
   auth: {
     loginFailed: 'Аутентификация не удалась, попробуйте снова.',
     loginSuccess: 'Успешный вход.',

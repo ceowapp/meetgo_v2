@@ -14,6 +14,17 @@ export default {
     referral_list: "Lista de referencias",
     language: 'Idioma'
   },
+  update: {
+    status_process_checking: 'Buscando actualizaciones',
+    status_process_downloading: 'Descargando',
+    status_process_awaiting: 'Esperando acción',
+    status_process_installing: 'Instalando actualización',
+    status_process_up_to_date: 'Actualizado a la última versión',
+    status_process_update_installed: 'Actualización completada',
+    status_process_default: 'Actualizando',
+    progress_text: 'La aplicación se está actualizando a la última versión. Por favor, espere hasta que se complete el proceso.',
+    error_rate_limit: 'El proceso de actualización está limitado. Por favor, inténtelo de nuevo más tarde.',
+  },
   auth: {
     loginFailed: 'Autenticación fallida, por favor intente de nuevo',
     loginSuccess: 'Inicio de sesión exitoso',

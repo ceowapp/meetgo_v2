@@ -14,6 +14,17 @@ export default {
     referral_list: "Daftar Referral",
     language: 'Bahasa'
   },
+  update: {
+    status_process_checking: 'Memeriksa pembaruan',
+    status_process_downloading: 'Mengunduh',
+    status_process_awaiting: 'Menunggu tindakan',
+    status_process_installing: 'Menginstal pembaruan',
+    status_process_up_to_date: 'Sudah versi terbaru',
+    status_process_update_installed: 'Pembaruan selesai',
+    status_process_default: 'Memperbarui',
+    progress_text: 'Aplikasi sedang diperbarui ke versi terbaru. Harap tunggu hingga proses selesai.',
+    error_rate_limit: 'Proses pembaruan dibatasi. Silakan coba lagi nanti.',
+  },
   auth: {
     loginFailed: 'Autentikasi gagal, silakan coba lagi',
     loginSuccess: 'Login berhasil',

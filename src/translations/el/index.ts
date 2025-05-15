@@ -14,6 +14,17 @@ export default {
     referral_list: "Λίστα παραπομπών",
     language: 'Γλώσσα'
   },
+  update: {
+    status_process_checking: 'Έλεγχος για ενημερώσεις',
+    status_process_downloading: 'Λήψη σε εξέλιξη',
+    status_process_awaiting: 'Αναμονή για ενέργεια',
+    status_process_installing: 'Εγκατάσταση ενημέρωσης',
+    status_process_up_to_date: 'Ενημερωμένο στην πιο πρόσφατη έκδοση',
+    status_process_update_installed: 'Η ενημέρωση ολοκληρώθηκε',
+    status_process_default: 'Ενημέρωση σε εξέλιξη',
+    progress_text: 'Η εφαρμογή ενημερώνεται στην πιο πρόσφατη έκδοση. Παρακαλώ περιμένετε μέχρι να ολοκληρωθεί η διαδικασία.',
+    error_rate_limit: 'Η διαδικασία ενημέρωσης έχει περιοριστεί. Παρακαλώ δοκιμάστε ξανά αργότερα.',
+  },
   auth: {
     loginFailed: 'Αποτυχία αυθεντικοποίησης, παρακαλώ δοκιμάστε ξανά',
     loginSuccess: 'Επιτυχής σύνδεση',

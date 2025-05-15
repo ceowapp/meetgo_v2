@@ -1,5 +1,6 @@
 <resources>
   <string name="app_name">MeetGo</string>
   <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">@string/KEY_GOOGLE_MAP</string>
-  <string name="expo_runtime_version">1.0.0</string>
+  <string moduleConfig="true" name="CodePushDeploymentKey">$(DEPLOYMENT_KEY_ANDROID)</string>
+  <string moduleConfig="true" name="CodePushServerUrl">$(CODE_PUSH_SERVER_URL)</string>
 </resources>

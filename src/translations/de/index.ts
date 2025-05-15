@@ -14,6 +14,17 @@ export default {
     referral_list: "Empfehlungsliste",
     language: 'Sprache'
   },
+  update: {
+    status_process_checking: 'Suche nach Updates',
+    status_process_downloading: 'Wird heruntergeladen',
+    status_process_awaiting: 'Warten auf Aktion',
+    status_process_installing: 'Update wird installiert',
+    status_process_up_to_date: 'Bereits auf dem neuesten Stand',
+    status_process_update_installed: 'Update abgeschlossen',
+    status_process_default: 'Wird aktualisiert',
+    progress_text: 'Die Anwendung wird auf die neueste Version aktualisiert. Bitte warten Sie, bis der Vorgang abgeschlossen ist.',
+    error_rate_limit: 'Die Aktualisierung ist derzeit eingeschränkt. Bitte versuchen Sie es später erneut.',
+  },
   auth: {
     loginFailed: 'Authentifizierung fehlgeschlagen, bitte erneut versuchen',
     loginSuccess: 'Erfolgreich eingeloggt',

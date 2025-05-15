@@ -14,6 +14,17 @@ export default {
     referral_list: "Danh sách Giới thiệu",
     language: 'Ngôn ngữ'
   },
+  update: {
+    status_process_checking: 'Kiểm tra bản cập nhật',
+    status_process_downloading: 'Đang tải',
+    status_process_awaiting: 'Chờ hành động',
+    status_process_installing: 'Đang cài đặt bản cập nhật',
+    status_process_up_to_date: 'Đã cập nhật bản mới nhất',
+    status_process_update_installed: 'Cập nhật hoàn tất',
+    status_process_default: 'Đang cập nhật',
+    progress_text: 'Ứng dụng đang cập nhật phiên bản mới, vui lòng chờ đến khi hoàn thành',
+    error_rate_limit: 'Đang cập nhật bị giới hạn, vui lòng thử lại sau',
+  },
   auth: {
     loginFailed: 'Xác thực thất bại vui lòng thử lại',
     loginSuccess: 'Đăng nhập thành công',

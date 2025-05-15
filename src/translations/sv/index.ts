@@ -14,6 +14,17 @@ export default {
     referral_list: "Referenslista",
     language: 'Språk'
   },
+  update: {
+    status_process_checking: 'Söker efter uppdateringar',
+    status_process_downloading: 'Laddar ner',
+    status_process_awaiting: 'Väntar på åtgärd',
+    status_process_installing: 'Installerar uppdatering',
+    status_process_up_to_date: 'Uppdaterad till senaste versionen',
+    status_process_update_installed: 'Uppdatering slutförd',
+    status_process_default: 'Uppdaterar',
+    progress_text: 'Applikationen uppdateras till den senaste versionen. Vänta tills processen är klar.',
+    error_rate_limit: 'Uppdateringsprocessen är begränsad. Försök igen senare.',
+  },
   auth: {
     loginFailed: 'Autentisering misslyckades, försök igen.',
     loginSuccess: 'Inloggning lyckades.',

@@ -75,6 +75,7 @@ export default function App() {
                     <MyLocation />
                   </ToastContextProvider>
                   <ForceUpdateApp />
+                  <UpdateManager />
                 </CommonManager>
               </SafeAreaProvider>
             </NavigationContainer>
