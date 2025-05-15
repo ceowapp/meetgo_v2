@@ -7,11 +7,11 @@ class AdsManager {
  static instance = null;
  
  constructor() {
-   if (AdManager.instance) {
-     return AdManager.instance;
+   if (AdsManager.instance) {
+     return AdsManager.instance;
    }
    
-   AdManager.instance = this;
+   AdsManager.instance = this;
    this.initialized = false;
    this.testMode = Config.IS_TEST_MODE === 'true' || __DEV__;
  }
@@ -39,9 +39,9 @@ class AdsManager {
  
  getAdUnitId(adType) {
    if (this.testMode) {
-     return AdManager.TEST_IDS[adType];
+     return AdsManager.TEST_IDS[adType];
    }
-   return AdManager.PRODUCTION_IDS[adType];
+   return AdsManager.PRODUCTION_IDS[adType];
  }
  
  async initialize() {
