@@ -28,10 +28,10 @@ import GlobalModal from 'services/globalModal';
 import MyLocation from 'services/location/MyLocation';
 import ForceUpdateApp from 'services/forceUpdate';
 import UpdateManager from 'manager/updateManager';
-import AdManager from 'manager/adManager';
+import AdsManager from 'manager/adsManager';
 import { I18nextProvider } from 'react-i18next';
 import DeepLink from 'services/deeplink';
-import i18n from './i18n';
+import i18n from 'i18n';
 
 enableScreens();
 const theme = {
@@ -52,7 +52,7 @@ export default function App() {
   const initializeServices = async () => {
     try {
       DeepLink.init();
-      await AdManager.initialize();
+      await AdsManager.initialize();
     } catch (error) {
       console.error('Error initializing services:', error);
     }

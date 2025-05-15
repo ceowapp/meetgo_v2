@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef, useCallback} from 'react';
+import React, {useEffect, useState, useRef, useCallback, Suspense} from 'react';
 import {StyleSheet, Dimensions, AppState, AppStateStatus} from 'react-native';
 import CodePush, {
   DownloadProgress,
@@ -15,6 +15,7 @@ import Animated, {
   useAnimatedStyle,
   runOnJS,
 } from 'react-native-reanimated';
+import LoadingScreen from 'components/LoadingScreen';
 
 import Svg, {Line} from 'react-native-svg';
 import {COLORS, SPACING} from 'utils/styleGuide';
@@ -144,7 +145,6 @@ const UpdateManager: React.FC = () => {
       } catch (parseError) {
         console.warn('Error parsing CodePush error:', parseError);
       }
-
       console.warn('CodePush.checkForUpdateError', error);
     }
   };
@@ -293,7 +293,6 @@ const UpdateManager: React.FC = () => {
         installMode: CodePush.InstallMode.ON_NEXT_RESTART,
         mandatoryInstallMode: CodePush.InstallMode.IMMEDIATE,
       };
-      
       CodePush.disallowRestart();
       await CodePush.sync(
         codePushOptions,
@@ -305,14 +304,12 @@ const UpdateManager: React.FC = () => {
       try {
         let errorCp = error as Error;
         const messageError = errorCp.message as string;
-        
         if (messageError && messageError.length > 4) {
           const removeStr = messageError.slice(4, messageError.length);
           const parseData = JSON.parse(removeStr) as {
             statusCode: number;
             message: string;
           };
-          
           if (parseData?.statusCode === 429) {
             setState(prev => ({
               ...prev,
@@ -372,4 +369,14 @@ const codePushOptions = {
   updateDialog: false,
 };
 
-export default CodePush(codePushOptions)(UpdateManager);
+const UpdateManagerWrapped = CodePush(codePushOptions)(UpdateManager);
+
+const UpdateManagerWithSuspense = () => {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <UpdateManagerWrapped />
+    </Suspense>
+  );
+};
+
+export default UpdateManagerWithSuspense;

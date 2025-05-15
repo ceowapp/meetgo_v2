@@ -3,7 +3,7 @@ import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import mobileAds, { MaxAdContentRating } from 'react-native-google-mobile-ads';
 import Config from 'react-native-config';
 
-class AdManager {
+class AdsManager {
  static instance = null;
  
  constructor() {
@@ -32,7 +32,6 @@ class AdManager {
    if (Platform.OS === 'ios') {
      const result = await check(PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY);
      if (result === RESULTS.DENIED) {
-       // The permission has not been requested, so request it.
        await request(PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY);
      }
    }
@@ -82,4 +81,4 @@ class AdManager {
  }
 }
 
-export default new AdManager();
+export default new AdsManager();

@@ -20,6 +20,7 @@ import { FLAGS, LANGUAGE_NAMES } from 'constant/languageConstant';
 import CommonHeader from 'components/CommonHeader';
 import Screen, {resFont, resWidth} from 'utils/Screen';
 import LinearGradient from 'react-native-linear-gradient';
+import { SupportedLanguage } from 'i18n/types';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ const LanguageSetting = ({ navigation }) => {
   const { i18n, t } = useTranslation();
   const {top} = useSafeAreaInsets();
   const insets = useSafeAreaInsets();
-  const changeLanguage = async (lng) => {
+  const changeLanguage = async (lng: SupportedLanguage) => {
     await i18n.changeLanguage(lng);
     await AsyncStorage.setItem('userLanguage', lng);
     /*if (Platform.OS === 'ios') {
@@ -54,7 +55,7 @@ const LanguageSetting = ({ navigation }) => {
     />
   );
 
-  const renderLanguageOption = (code) => {
+  const renderLanguageOption = (code: SupportedLanguage) => {
     const isActive = i18n.language === code;
     return (
       <TouchableOpacity
