@@ -1,5 +1,4 @@
 import React, {FC, ReactElement} from 'react';
-
 import {StyleSheet} from 'react-native';
 import {
   NativeSafeAreaViewProps,
@@ -15,9 +14,10 @@ const defaultStyles = StyleSheet.create({
 });
 
 type IContainerProps = NativeSafeAreaViewProps;
+
 const Container: FC<IContainerProps> = ({
-  children,
-  style,
+  children = <></>,
+  style = defaultStyles.container,
   ...rest
 }): ReactElement => {
   return (
@@ -27,8 +27,4 @@ const Container: FC<IContainerProps> = ({
   );
 };
 
-Container.defaultProps = {
-  children: <></>,
-  style: defaultStyles.container,
-};
 export default Container;

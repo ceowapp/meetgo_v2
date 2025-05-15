@@ -61,14 +61,14 @@ function renderLeftDefault(
 }
 
 const CommonHeader: FC<CommonHeaderProps> = ({
-  renderRight,
-  renderLeft,
-  title,
-  titleStyle,
-  typeOfHeader,
-  containerStyle,
-  onPressBtnDefaultLeft,
-  linesOfTitle,
+  renderRight = undefined,
+  renderLeft = undefined,
+  title = '',
+  titleStyle = {},
+  typeOfHeader = 'NAVIGATE_PAGE',
+  containerStyle = {},
+  onPressBtnDefaultLeft = undefined,
+  linesOfTitle = 1,
 }): ReactElement => {
   const titleStyles = {...styles.textTitle, ...titleStyle};
   return (
@@ -89,15 +89,6 @@ const CommonHeader: FC<CommonHeaderProps> = ({
     </View>
   );
 };
+
 export default CommonHeader;
 
-CommonHeader.defaultProps = {
-  typeOfHeader: 'NAVIGATE_PAGE',
-  linesOfTitle: 1,
-  renderLeft: undefined,
-  renderRight: undefined,
-  title: '',
-  titleStyle: {},
-  containerStyle: {},
-  onPressBtnDefaultLeft: undefined,
-};

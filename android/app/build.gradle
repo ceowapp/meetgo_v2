@@ -89,11 +89,16 @@ def reactNativeArchitectures() {
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdkVersion rootProject.ext.compileSdkVersion
     namespace "app.meetgo.vn"
     defaultConfig {
+        applicationId "app.meetgo.vn"
+        minSdkVersion 24
+        targetSdkVersion 34
+        compileSdkVersion 35
         versionCode 6
         versionName "2.0.0"
+        multiDexEnabled true
     }
     signingConfigs {
         debug {
@@ -206,10 +211,12 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation platform('com.google.firebase:firebase-bom:32.2.2')
     implementation("com.google.android.gms:play-services-ads:24.2.0")
-    
+
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     
+    implementation project(':react-native-config')
+
     implementation "com.facebook.fresco:animated-gif:2.6.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     

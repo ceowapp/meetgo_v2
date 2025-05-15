@@ -1,7 +1,8 @@
 import React, {ComponentClass, useCallback, useState, FC} from 'react';
 import {Image, StyleSheet, View, ViewStyle} from 'react-native';
 import FastImage, {FastImageProps} from 'react-native-fast-image';
-import Animated, {EasingNode, useValue} from 'react-native-reanimated';
+import Animated, { Easing } from 'react-native-reanimated'; 
+import { runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
 import ContentLoader from 'react-content-loader/native';
 import {Rect} from 'react-native-svg';
 import Images from 'utils/Images';
@@ -29,17 +30,17 @@ export const ProgressiveImage: FC<FastImageProps & IAnimateImageProps> =
   props => {
     const [loadEnd, setLoadEnd] = useState<boolean>(false);
     const [loadFailed, setLoadFailed] = useState<boolean>(false);
-    const imageOpacity = useValue(0);
+    const imageOpacity = useSharedValue(0); 
     const onLoad = () => {
-      Animated.timing(imageOpacity, {
-        toValue: 1,
-        easing: EasingNode.linear,
-        duration: 500,
-      }).start(() => {
-        setLoadEnd(true);
-      });
+      imageOpacity.value = withTiming(1, 
+        { easing: Easing.linear, duration: 500 }, 
+        (finished) => {
+          if (finished) {
+            runOnJS(setLoadEnd)(true);
+          }
+        }
+      );
     };
-
     const onError = () => setLoadFailed(true);
     const {style, type = 'square', source} = props;
     const containerStyle: ViewStyle = StyleSheet.flatten([
@@ -114,3 +115,5 @@ export const ProgressiveImage: FC<FastImageProps & IAnimateImageProps> =
       </View>
     );
   };
+
+

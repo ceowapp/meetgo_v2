@@ -1,5 +1,5 @@
 import Container from 'components/Container';
-import React, {useEffect} from 'react';
+import React from 'react';
 import {
   Image,
   ScrollView,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Linking,
-  Button
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
@@ -26,9 +25,6 @@ import Platform from 'utils/Platform';
 import MeetGuide from './MeetGuide';
 import HandlerModal from './HandlerModal';
 import { useTranslation } from 'react-i18next';
-import BannerAdComponent from 'components/Ads/BannerAd';
-import InterstitialAdService from 'components/Ads/InterstitialAd';
-
 const bgFake = [
   {
     key: 1,
@@ -104,24 +100,9 @@ const HomeScreens = () => {
   const openHowToUseApp = () => {
     Linking.openURL('https://meetgo.vn/huong-dan-su-dung');
   };
-  useEffect(() => {
-    // Preload interstitial ad when screen loads
-    InterstitialAdService.load().onLoad(() => {
-      console.log('Interstitial ad ready to show');
-    }).onClose(() => {
-      console.log('Interstitial ad closed');
-    });
-  }, []);
-
-  const showInterstitial = () => {
-    if (!InterstitialAdService.show()) {
-      console.log('Interstitial not ready yet');
-    }
-  };
   return (
     <LinearGradient {...Screen.linearBackground} style={{flex: 1}}>
       <Container edges={['top']}>
-        <Button title="Show Ad" onPress={showInterstitial} />
         <HandlerModal />
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -154,13 +135,9 @@ const HomeScreens = () => {
                 <MeetGuide step={item.key} onClick={openHowToUseApp} />
               )}
             />
-            <View style={{ position: 'relative', top: 20, width: '100%' }}>
-              <BannerAdComponent />
-            </View>
           </View>
         </ScrollView>
       </Container>
-      
     </LinearGradient>
   );
 };

@@ -1,20 +1,22 @@
-import React, {ReactElement, useEffect} from 'react';
-import {StyleSheet} from 'react-native';
-import {useNetInfo} from '@react-native-community/netinfo';
+import React, { ReactElement } from 'react';
+import { StyleSheet } from 'react-native';
+import { useNetInfo } from '@react-native-community/netinfo';
 import Animated, {
-  EasingNode,
-  interpolateNode,
-  useValue,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
   Extrapolate,
+  Easing,
 } from 'react-native-reanimated';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Text} from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text } from 'react-native-paper';
 
-import {resWidth} from 'utils/Screen';
-import {useDidUpdate} from 'utils/Utility';
-import {useAppDispatch} from 'storeConfig/hook';
-import {networkActions} from './slice';
-import {COLORS, SPACING} from 'utils/styleGuide';
+import { resWidth } from 'utils/Screen';
+import { useDidUpdate } from 'utils/Utility';
+import { useAppDispatch } from 'storeConfig/hook';
+import { networkActions } from './slice';
+import { COLORS, SPACING } from 'utils/styleGuide';
 
 const DEFAULT_TOP_SPACING = resWidth(16);
 const styles = StyleSheet.create({
@@ -32,26 +34,18 @@ const styles = StyleSheet.create({
 });
 
 const NetworkInfoHandler = (): ReactElement => {
-  const animatedValue = useValue(0);
+  const animatedValue = useSharedValue(0);
   const dispatch = useAppDispatch();
-  const {top} = useSafeAreaInsets();
+  const { top } = useSafeAreaInsets();
   const topPosition = top + DEFAULT_TOP_SPACING;
   const netInfo = useNetInfo();
 
   const show = () => {
-    Animated.timing(animatedValue, {
-      toValue: 1,
-      duration: 300,
-      easing: EasingNode.inOut(EasingNode.ease),
-    }).start();
+    animatedValue.value = withTiming(1, { duration: 300, easing: Easing.inOut(Easing.ease) });
   };
 
   const hide = () => {
-    Animated.timing(animatedValue, {
-      toValue: 0,
-      duration: 300,
-      easing: EasingNode.inOut(EasingNode.ease),
-    }).start();
+    animatedValue.value = withTiming(0, { duration: 300, easing: Easing.inOut(Easing.ease) });
   };
 
   useDidUpdate(() => {
@@ -63,16 +57,18 @@ const NetworkInfoHandler = (): ReactElement => {
     }
   }, [netInfo]);
 
-  const translateY = interpolateNode(animatedValue, {
-    inputRange: [0, 1],
-    outputRange: [-topPosition, topPosition],
-    extrapolate: Extrapolate.CLAMP,
+  const animatedStyles = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      animatedValue.value,
+      [0, 1],
+      [-topPosition, topPosition],
+      Extrapolate.CLAMP
+    );
+    return {
+      opacity: animatedValue.value,
+      transform: [{ translateY }],
+    };
   });
-
-  const animatedStyles = {
-    opacity: animatedValue,
-    transform: [{translateY}],
-  };
 
   return (
     <Animated.View style={[styles.container, animatedStyles]}>

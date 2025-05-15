@@ -13,6 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import CarouselDot from 'components/CarouselDot';
 import Container from 'components/Container';
 import Navbar from 'components/Navbar';
+import { useSharedValue } from 'react-native-reanimated';
 
 /** Utils and other */
 import {SPACING} from 'utils/styleGuide';
@@ -31,14 +32,14 @@ GoogleSignin.configure();
 const widthContainerDot = perWidth(100);
 const Intro = (): ReactElement => {
   const { t } = useTranslation();
-  const [index, setIndex] = useState(0);
+  const index = useSharedValue(0);
   const {onSignInApple, onSignInGoogle, onSiginAndroidApple, loading} =
     useAuth();
   const scrollHandler = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const valueRound = event.nativeEvent.contentOffset.x % widthContainerDot;
     if (valueRound === 0) {
       const nextIndex = event.nativeEvent.contentOffset.x / widthContainerDot;
-      setIndex(nextIndex);
+      index.value = nextIndex;
     }
   };
   const INTRO = [

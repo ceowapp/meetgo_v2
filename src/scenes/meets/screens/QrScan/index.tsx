@@ -1,4 +1,4 @@
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/core';
 import BarcodeMask from 'components/BarcodeMask';
 import useToast from 'components/Toast/useToast';
 import appConstant from 'constant/appConstant';
@@ -23,6 +23,9 @@ import {ProgressiveImage} from 'components/Image/ProgressiveImage';
 import LinearGradient from 'react-native-linear-gradient';
 import {ButtonPrimary} from 'components/Button/Primary';
 import { useTranslation } from 'react-i18next';
+import BannerAdComponent from 'components/Ads/BannerAd';
+import InterstitialAdService from 'components/Ads/InterstitialAd';
+import { useIsForeground } from 'scenes/meets/helper/useIsForeground';
 
 const SCAN_WIDTH = resWidth(200);
 
@@ -37,9 +40,14 @@ const QrScan = () => {
   const { t } = useTranslation();
   const account = useAppSelector(AuthSelector.getAccount);
   const {addToast} = useToast();
-  const isFocus = useIsFocused();
+  const isFocused = useIsFocused();
   const camera = useRef(null);
-  
+  const [adShown, setAdShown] = useState(false);
+  const [isAdLoading, setIsAdLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const adShownRef = useRef(false);
+  const adLoadedRef = useRef(false);
+
   // Updated camera permissions hook
   const { hasPermission, requestPermission } = useCameraPermission();
   
@@ -53,9 +61,14 @@ const QrScan = () => {
   const dataFakeLocation = useAppSelector(locationSelector.getDataFakeLocation);
   const hasLocationNearBy = listLocationNearBy.length > 0 || !!dataFakeLocation;
 
+  const isForeground = useIsForeground();
+  const isActive = isFocused && isForeground;
+
   // Using the built-in code scanner from react-native-vision-camera
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
+    scanMode: 'continuous', // Ensure continuous scanning
+    regionOfInterest: viewFinderBounds, // Focus scanning on the barcode mask area
     onCodeScanned: (codes) => {
       if (codes.length > 0 && codes[0].value) {
         try {
@@ -104,6 +117,60 @@ const QrScan = () => {
   }, []);
 
   const onOpenSettings = () => Linking.openSettings();
+
+  // Initialize ad when component mounts
+  useEffect(() => {
+    // Pre-load the ad when component mounts for faster display later
+    if (!adLoadedRef.current) {
+      InterstitialAdService.load().onLoad(() => {
+        console.log('Interstitial ad loaded and ready');
+        adLoadedRef.current = true;
+      });
+    }
+    
+    // Clean up ads when component unmounts
+    return () => {
+      adShownRef.current = false;
+      adLoadedRef.current = false;
+      setAdShown(false);
+      setIsAdLoading(false);
+    };
+  }, []);
+
+  // Handle showing the ad when appropriate
+  useEffect(() => {
+    // Only attempt to show ad if we're active, haven't shown one yet, and ad is loaded
+    if (isActive && !adShownRef.current && !isAdLoading && adLoadedRef.current) {
+      setIsAdLoading(true);
+      
+      setTimeout(() => {
+        if (InterstitialAdService.show()) {
+          console.log('Interstitial ad displayed');
+          adShownRef.current = true;
+          setAdShown(true);
+          
+          // Set up callback for when ad is closed
+          InterstitialAdService.onClose(() => {
+            console.log('Interstitial ad closed');
+            setIsAdLoading(false);
+            
+            // Pre-load the next ad after this one closes
+            InterstitialAdService.load();
+          });
+        } else {
+          console.log('Interstitial not ready to display yet');
+          setIsAdLoading(false);
+          
+          // Try to load the ad if showing failed
+          if (!adLoadedRef.current) {
+            InterstitialAdService.load().onLoad(() => {
+              adLoadedRef.current = true;
+            });
+          }
+        }
+      }, 1000);
+    }
+  }, [isActive, adLoadedRef.current]);
 
   const renderNearLocation = () => {
     const iconNearBy = hasLocationNearBy
@@ -162,12 +229,22 @@ const QrScan = () => {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={isFocus}
+        isActive={isActive}
         orientation="portrait"
         photo={false}
         video={false}
         audio={false}
         codeScanner={codeScanner}
+        enableZoomGesture={false}  
+        onInitialized={() => setCameraReady(true)}
+        onError={(error) => {
+          console.error('Camera error:', error);
+          addToast({
+            message: t('meets.camera_error'),
+            type: 'ERROR_V3',
+            position: 'top',
+          });
+        }}
       />
       {renderNearLocation()}
       <BarcodeMask
@@ -179,6 +256,9 @@ const QrScan = () => {
         animatedLineColor={COLORS.primary}
         edgeBorderWidth={6}
       />
+      <View style={styles.bannerAd}>
+        {cameraReady && <BannerAdComponent />}
+      </View>
     </View>
   );
 };
@@ -231,6 +311,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: SPACING.s_4,
   },
+  bannerAd: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+  }
 });
 
 export default QrScan;

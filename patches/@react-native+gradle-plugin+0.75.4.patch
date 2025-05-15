@@ -1,0 +1,99 @@
+diff --git a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+index 026a927..af91a81 100644
+--- a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
++++ b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+@@ -4,7 +4,7 @@ gson = "2.8.9"
+ guava = "31.0.1-jre"
+ javapoet = "1.13.0"
+ junit = "4.13.2"
+-kotlin = "1.9.24"
++kotlin = "2.1.0"
+ assertj = "3.25.1"
+ 
+ [libraries]
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+index 8ec00aa..a542631 100644
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+@@ -56,15 +56,13 @@ dependencies {
+ // We intentionally don't build for Java 17 as users will see a cryptic bytecode version
+ // error first. Instead we produce a Java 11-compatible Gradle Plugin, so that AGP can print their
+ // nice message showing that JDK 11 (or 17) is required first
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java { targetCompatibility = JavaVersion.VERSION_17 }
+ 
+ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   kotlinOptions {
+-    apiVersion = "1.6"
+-    // See comment above on JDK 11 support
+-    jvmTarget = "11"
++    jvmTarget = "17"
+     allWarningsAsErrors =
+         project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
+   }
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+index 26f2c6b..b414b68 100644
+--- a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+@@ -45,15 +45,13 @@ dependencies {
+ // We intentionally don't build for Java 17 as users will see a cryptic bytecode version
+ // error first. Instead we produce a Java 11-compatible Gradle Plugin, so that AGP can print their
+ // nice message showing that JDK 11 (or 17) is required first
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java { targetCompatibility = JavaVersion.VERSION_17 }
+ 
+ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   kotlinOptions {
+-    apiVersion = "1.6"
+-    // See comment above on JDK 11 support
+-    jvmTarget = "11"
++    jvmTarget = "17"
+     allWarningsAsErrors =
+         project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
+   }
+diff --git a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+index 2eb2181..89c98e0 100644
+--- a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+@@ -16,14 +16,13 @@ group = "com.facebook.react"
+ 
+ dependencies { implementation(libs.junit) }
+ 
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java { targetCompatibility = JavaVersion.VERSION_17 }
+ 
+ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   kotlinOptions {
+-    apiVersion = "1.6"
+-    jvmTarget = "11"
++    jvmTarget = "17"
+     allWarningsAsErrors =
+         project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
+   }
+diff --git a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+index a9dfa6a..66cea4c 100644
+--- a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+@@ -21,14 +21,13 @@ dependencies {
+   testImplementation(project(":shared-testutil"))
+ }
+ 
+-java { targetCompatibility = JavaVersion.VERSION_11 }
++java { targetCompatibility = JavaVersion.VERSION_17 }
+ 
+ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   kotlinOptions {
+-    apiVersion = "1.6"
+-    jvmTarget = "11"
++    jvmTarget = "17"
+     allWarningsAsErrors =
+         project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
+   }

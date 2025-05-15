@@ -1,17 +1,14 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {StyleSheet, Dimensions, AppState, AppStateStatus} from 'react-native';
+import {StyleSheet, Dimensions, AppState, AppStateStatus, Text} from 'react-native';
 import * as Updates from 'expo-updates';
-/** utils */
 import {usePrevious} from 'utils/Utility';
 import {perWidth, resFont, resWidth} from 'utils/Screen';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
-  useValue,
-  timing,
-  EasingNode,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
-
 import Svg, {Line} from 'react-native-svg';
 import {COLORS, SPACING} from 'utils/styleGuide';
 
@@ -20,10 +17,6 @@ enum UpdateMode {
   STORE = 'STORE',
   UPDATE = 'UPDATE',
   RATE_LIMIT = 'RATE_LIMIT',
-}
-
-interface Props {
-  appState: string;
 }
 
 interface InitState {
@@ -48,7 +41,7 @@ const STROKE_COLOR = COLORS.green;
 
 const {width} = Dimensions.get('window');
 
-const AnimatedCircle = Animated.createAnimatedComponent(Line);
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 const styles = StyleSheet.create({
   container: {
@@ -64,76 +57,122 @@ const styles = StyleSheet.create({
     color: 'rgba(256,256,256,0.7)',
     textAlign: 'center',
   },
+  updateText: {
+    color: 'white',
+    fontFamily: 'Roboto',
+    fontSize: resFont(14),
+    lineHeight: resWidth(16),
+  },
+  statusText: {
+    textAlign: 'center',
+    marginVertical: 5,
+  },
 });
 
 const UpdateManager: React.FC = () => {
   const [state, setState] = useState<InitState>(initState);
-  const [appState, setAppState] = useState<AppStateStatus>();
-  const translateY = useValue(0);
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const translateY = useSharedValue(-110); // Start offscreen
   const lastUpdateMode = usePrevious(state.updateMode);
   const lastAppState = usePrevious(appState);
-  const updateObject = useRef<Updates.UpdateCheckResult | null>(null);
+  const updateObject = useRef<any>(null);
+  const [updatesEnabled, setUpdatesEnabled] = useState<boolean>(false);
+  const progress = useSharedValue(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const initializeUpdates = async () => {
+      try {
+        if (!Updates || typeof Updates.checkForUpdateAsync !== 'function') {
+          console.warn('Expo Updates module not properly initialized');
+          setUpdatesEnabled(false);
+          return;
+        }
+        setUpdatesEnabled(true);
+        checkForUpdate().catch(err => 
+          console.error('Initial update check failed:', err)
+        );
+      } catch (error) {
+        console.error('Error initializing Expo Updates:', error);
+        setUpdatesEnabled(false);
+      }
+    };
+    initializeUpdates();
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const checkForUpdate = async () => {
+    if (!updatesEnabled) return;
     try {
       console.log('------- Expo Updates check for Update -------');
+      updateStatusDidChange('checking');
       const update = await Updates.checkForUpdateAsync();
       updateObject.current = update;
       console.log('checkForUpdate', update);
-      
       if (!update.isAvailable) {
         console.log('------- Expo Updates have no Update -------');
-        setState({...state, updateMode: UpdateMode.NONE});
+        updateStatusDidChange('up-to-date');
+        setState(prev => ({...prev, updateMode: UpdateMode.NONE}));
         return;
       }
-
       console.log('------- Expo Updates have an Update -------');
-      setState({...state, updateMode: UpdateMode.UPDATE});
-      
+      setState(prev => ({...prev, updateMode: UpdateMode.UPDATE}));
     } catch (error) {
       console.warn('Updates.checkForUpdateError', error);
-      try {
-        let errorMessage = '';
-        if (typeof error === 'object' && error !== null) {
-          errorMessage = error.message || JSON.stringify(error);
-        } else {
-          errorMessage = String(error);
-        }
-        if (errorMessage.includes('{') && errorMessage.includes('}')) {
-          const jsonStart = errorMessage.indexOf('{');
-          const jsonEnd = errorMessage.lastIndexOf('}') + 1;
-          if (jsonStart >= 0 && jsonEnd > 0) {
+      handleUpdateError(error);
+    }
+  };
+
+  const handleUpdateError = (error: any) => {
+    try {
+      let errorMessage = '';
+      if (typeof error === 'object' && error !== null) {
+        errorMessage = (error as Error).message || JSON.stringify(error);
+      } else {
+        errorMessage = String(error);
+      }
+      if (errorMessage.includes('{') && errorMessage.includes('}')) {
+        const jsonStart = errorMessage.indexOf('{');
+        const jsonEnd = errorMessage.lastIndexOf('}') + 1;
+        if (jsonStart >= 0 && jsonEnd > 0) {
+          try {
             const jsonStr = errorMessage.substring(jsonStart, jsonEnd);
             const parseData = JSON.parse(jsonStr);
             if (parseData.statusCode === 429) {
-              setState({
-                ...state,
+              setState(prev => ({
+                ...prev,
                 updateMode: UpdateMode.RATE_LIMIT,
                 statusProcess: parseData.message || 'Rate limit reached',
-              });
+              }));
               return;
             }
+          } catch (jsonError) {
+            console.error('Error parsing JSON from error message:', jsonError);
           }
         }
-        setState({
-          ...state,
-          updateMode: UpdateMode.NONE,
-          statusProcess: 'Update check failed',
-        });
-      } catch (parseError) {
-        console.error('Error parsing Update error:', parseError);
-        setState({
-          ...state,
-          updateMode: UpdateMode.NONE,
-          statusProcess: 'Update check failed',
-        });
       }
+      setState(prev => ({
+        ...prev,
+        updateMode: UpdateMode.NONE,
+        statusProcess: 'Update check failed',
+      }));
+    } catch (parseError) {
+      console.error('Error handling update error:', parseError);
+      setState(prev => ({
+        ...prev,
+        updateMode: UpdateMode.NONE,
+        statusProcess: 'Update check failed',
+      }));
     }
   };
 
   const updateStatusDidChange = (status: string) => {
-    console.log('------- Expo Updates updateStatusDidChange -------');
-    let {statusProcess} = state;
+    console.log('------- Expo Updates updateStatusDidChange:', status, '-------');
+    let statusProcess = state.statusProcess;
     
     switch (status) {
       case 'checking':
@@ -163,28 +202,26 @@ const UpdateManager: React.FC = () => {
       default:
         break;
     }
-    setState({...state, statusProcess});
+    
+    setState(prevState => ({...prevState, statusProcess}));
   };
 
   const showUpdate = () => {
-    timing(translateY, {
-      toValue: 110,
+    translateY.value = withTiming(110, {
       duration: 500,
-      easing: EasingNode.inOut(EasingNode.ease),
-    }).start();
+      easing: Easing.inOut(Easing.ease),
+    });
   };
 
   const hideUpdate = () => {
     setTimeout(() => {
-      timing(translateY, {
-        toValue: -110,
+      translateY.value = withTiming(-110, {
         duration: 500,
-        easing: EasingNode.inOut(EasingNode.ease),
-      }).start();
+        easing: Easing.inOut(Easing.ease),
+      });
     }, 1000);
   };
 
-  const progress = useSharedValue(0);
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     console.log('nextAppState Update manager', nextAppState);
     if (nextAppState) {
@@ -193,72 +230,82 @@ const UpdateManager: React.FC = () => {
   };
   
   useEffect(() => {
-    void checkForUpdate();
     const subscription = AppState.addEventListener(
       'change',
       handleAppStateChange,
     );
 
     return () => {
-      subscription?.remove();
+      subscription.remove();
     };
   }, []);
 
   useEffect(() => {
     if (
+      updatesEnabled &&
       lastAppState !== appState &&
       (lastAppState === 'background' || lastAppState === 'inactive') &&
       appState === 'active'
     ) {
-      void checkForUpdate();
+      checkForUpdate().catch(err => 
+        console.error('Background update check failed:', err)
+      );
     }
-  }, [appState]);
+  }, [appState, updatesEnabled]);
 
   async function handleUpdateManually() {
+    if (!updatesEnabled) return;
     try {
       updateStatusDidChange('downloading');
-      
-      // Simulate progress for better UX (Expo Updates doesn't provide progress)
-      const progressInterval = setInterval(() => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      progress.value = 0;
+      progressIntervalRef.current = setInterval(() => {
         progress.value = Math.min(progress.value + 0.05, 0.9);
       }, 300);
-      
       await Updates.fetchUpdateAsync();
-      clearInterval(progressInterval);
-      
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       updateStatusDidChange('installing');
       progress.value = 1;
-      
       setTimeout(async () => {
-        await Updates.reloadAsync();
+        try {
+          await Updates.reloadAsync();
+        } catch (reloadError) {
+          console.error('Error reloading app:', reloadError);
+          updateStatusDidChange('error');
+        }
       }, 1000);
-      
     } catch (e) {
       console.log('handleUpdateManually error', e);
       updateStatusDidChange('error');
       progress.value = 0;
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     }
   }
 
   useEffect(() => {
     const {updateMode} = state;
-    if (updateMode === UpdateMode.UPDATE && updateMode !== lastUpdateMode) {
+    if (updatesEnabled && updateMode === UpdateMode.UPDATE && updateMode !== lastUpdateMode) {
       showUpdate();
-      void handleUpdateManually();
+      handleUpdateManually().catch(err => 
+        console.error('Error handling update manually:', err)
+      );
     }
-  }, [state]);
+  }, [state.updateMode, updatesEnabled]);
 
   useEffect(() => {
     if (progress.value === 1) {
       hideUpdate();
     }
-  }, [progress]);
+  }, [progress.value]);
 
-  const containerStyles = StyleSheet.flatten([
-    styles.container,
-    {transform: [{translateY}]},
-  ]);
-  
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: width - width * progress.value,
   }));
@@ -266,24 +313,27 @@ const UpdateManager: React.FC = () => {
   const colorMessage =
     state.updateMode !== UpdateMode.RATE_LIMIT ? STROKE_COLOR : COLORS.error;
     
+  if (!updatesEnabled) return null;
+
   return (
-    <Animated.View style={containerStyles}>
+    <Animated.View 
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY: translateY }]
+        }
+      ]}
+    >
       {state.updateMode !== UpdateMode.RATE_LIMIT && (
-        <Animated.Text
-          style={{
-            color: 'white',
-            fontFamily: 'Roboto',
-            fontSize: resFont(14),
-            lineHeight: resWidth(16),
-          }}>
+        <Text style={styles.updateText}>
           Ứng dụng đang cập nhật phiên bản mới, vui lòng chờ đến khi hoàn thành
-        </Animated.Text>
+        </Text>
       )}
-      <Animated.Text style={{textAlign: 'center', color: colorMessage}}>
+      <Text style={[styles.statusText, {color: colorMessage}]}>
         {state.statusProcess}
-      </Animated.Text>
+      </Text>
       <Svg>
-        <AnimatedCircle
+        <AnimatedLine
           x1="0"
           y1="10"
           x2={perWidth(100)}

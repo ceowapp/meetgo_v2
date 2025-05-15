@@ -1,79 +1,58 @@
 import React, {FC, memo} from 'react';
 import {View, ViewStyle} from 'react-native';
-import Animated, {EasingNode} from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import {
   BarcodeMaskProps,
-  RunTimingFn,
   EdgePosition,
   DimensionUnit,
 } from './type';
 import styles from './styles';
 
-const {Value, Clock, block, cond, set, startClock, timing, eq} = Animated;
-
-const runTiming: RunTimingFn = (
-  clock: Animated.Clock,
-  value: number,
-  destination: number,
-  duration: number,
-) => {
-  const timingState: Animated.TimingState = {
-    finished: new Value(0),
-    position: new Value(value),
-    time: new Value(0),
-    frameTime: new Value(0),
-  };
-
-  const timingConfig: Animated.TimingConfig = {
-    duration,
-    toValue: new Value(destination),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    easing: EasingNode.inOut(EasingNode.ease),
-  };
-
-  return block([
-    startClock(clock),
-    timing(clock, timingState, timingConfig),
-    cond(timingState.finished, [
-      set(timingState.finished, 0),
-      set(timingState.time, 0),
-      set(timingState.frameTime, 0),
-      set(
-        timingState.position,
-        cond(eq(timingState.position, destination), destination, value),
-      ),
-      set(
-        timingConfig.toValue as Animated.Value<number>,
-        cond(eq(timingState.position, destination), value, destination),
-      ),
-    ]),
-    timingState.position,
-  ]);
-};
-
 const noop = () => {};
+
+// Define default props
+const defaultProps = {
+  width: 280,
+  height: 230,
+  edgeWidth: 20,
+  edgeHeight: 20,
+  edgeColor: '#fff',
+  edgeBorderWidth: 4,
+  edgeRadius: 0,
+  backgroundColor: '#eee',
+  maskOpacity: 1,
+  animatedLineColor: '#fff',
+  animatedLineOrientation: 'horizontal',
+  animatedLineThickness: 2,
+  animationDuration: 2000,
+  showAnimatedLine: true,
+};
 
 const BarcodeMask: FC<BarcodeMaskProps> = memo(
   ({
-    width,
-    height,
-    startValue,
+    width = defaultProps.width,
+    height = defaultProps.height,
+    startValue = 0,
     destinationValue,
-    backgroundColor,
-    edgeBorderWidth,
-    edgeColor,
-    edgeHeight,
-    edgeWidth,
-    edgeRadius,
-    maskOpacity,
+    backgroundColor = defaultProps.backgroundColor,
+    edgeBorderWidth = defaultProps.edgeBorderWidth,
+    edgeColor = defaultProps.edgeColor,
+    edgeHeight = defaultProps.edgeHeight,
+    edgeWidth = defaultProps.edgeWidth,
+    edgeRadius = defaultProps.edgeRadius,
+    maskOpacity = defaultProps.maskOpacity,
     animatedComponent,
-    animatedLineColor,
-    animatedLineOrientation,
-    animatedLineThickness,
-    animationDuration,
-    showAnimatedLine,
-    runTimingFn,
+    animatedLineColor = defaultProps.animatedLineColor,
+    animatedLineOrientation = defaultProps.animatedLineOrientation,
+    animatedLineThickness = defaultProps.animatedLineThickness,
+    animationDuration = defaultProps.animationDuration,
+    showAnimatedLine = defaultProps.showAnimatedLine,
     onLayoutChange,
     outerBoundingRect,
     onOuterLayout,
@@ -111,7 +90,8 @@ const BarcodeMask: FC<BarcodeMaskProps> = memo(
       },
     });
 
-    const selfAnimatedLineDimension = (
+    // Calculate dimensions outside of worklets
+    const getAnimatedLineDimension = (
       dimension: DimensionUnit | undefined,
       outerDimension: 'width' | 'height',
     ) => {
@@ -127,53 +107,72 @@ const BarcodeMask: FC<BarcodeMaskProps> = memo(
       return outer * 0.9;
     };
 
-    const selfAnimatedValue = (
+    const getAnimatedValue = (
       dimension: DimensionUnit | undefined,
       outerDimension: 'width' | 'height',
     ) => {
-      const calculatedDimension = selfAnimatedLineDimension(
+      const calculatedDimension = getAnimatedLineDimension(
         dimension,
         outerDimension,
       );
       const fullDimension = calculatedDimension / 0.9;
-
       return fullDimension - (animatedLineThickness as number);
     };
 
-    const seftAnimatedLineStyle = () => {
+    // Pre-calculate values to avoid calling non-worklet functions in worklets
+    const widthDimension = getAnimatedLineDimension(width, 'width');
+    const heightDimension = getAnimatedLineDimension(height, 'height');
+    const maxAnimatedWidth = getAnimatedValue(width, 'width');
+    const maxAnimatedHeight = getAnimatedValue(height, 'height');
+    const finderWidth = widthDimension / 0.9;
+    const finderHeight = heightDimension / 0.9;
+
+    // Create animated values using Reanimated hooks
+    const animationPosition = useSharedValue(startValue);
+    
+    // Start the animation when component mounts
+    React.useEffect(() => {
+      const destination = animatedLineOrientation === 'horizontal' 
+        ? maxAnimatedHeight
+        : maxAnimatedWidth;
+      
+      animationPosition.value = startValue;
+      
+      // Set up the repeating animation
+      animationPosition.value = withRepeat(
+        withTiming(
+          destinationValue || destination, 
+          { 
+            duration: animationDuration,
+            easing: Easing.inOut(Easing.ease)
+          }
+        ),
+        -1, // Infinite repeat
+        true // Reverse
+      );
+    }, [maxAnimatedWidth, maxAnimatedHeight, animationDuration, animatedLineOrientation, startValue, destinationValue]);
+
+    // Create animated style as a worklet function
+    const animatedLineStyle = useAnimatedStyle(() => {
       if (animatedLineOrientation === 'horizontal') {
-        const seftwidth = selfAnimatedLineDimension(width, 'width');
-        const destination = selfAnimatedValue(height, 'height');
         return {
           ...styles.animatedLine,
           height: animatedLineThickness,
-          width: seftwidth,
+          width: widthDimension,
           backgroundColor: animatedLineColor,
-          top: runTimingFn?.(
-            new Clock(),
-            startValue || 0,
-            destinationValue || destination,
-            animationDuration as number,
-          ),
+          top: animationPosition.value,
         };
       }
-      const seftheight = selfAnimatedLineDimension(height, 'height');
-      const destination = selfAnimatedValue(width, 'width');
       return {
         ...styles.animatedLine,
         width: animatedLineThickness,
-        height: seftheight,
+        height: heightDimension,
         backgroundColor: animatedLineColor,
-        left: runTimingFn?.(
-          new Clock(),
-          startValue || 0,
-          destinationValue || destination,
-          animationDuration as number,
-        ),
+        left: animationPosition.value,
       };
-    };
+    });
 
-    const seftRenderEdge = (edgePosition: EdgePosition) => {
+    const renderEdge = (edgePosition: EdgePosition) => {
       const defaultStyle = {
         width: edgeWidth,
         height: edgeHeight,
@@ -191,16 +190,13 @@ const BarcodeMask: FC<BarcodeMaskProps> = memo(
       );
     };
 
-    const seftwidth = selfAnimatedLineDimension(width, 'width') / 0.9;
-    const seftheight = selfAnimatedLineDimension(height, 'height') / 0.9;
-
-    const seftRenderAnimated = () => {
+    const renderAnimated = () => {
       if (showAnimatedLine) {
         if (animatedComponent) {
-          return animatedComponent(seftwidth, seftheight);
+          return animatedComponent(finderWidth, finderHeight);
         }
 
-        return <Animated.View style={seftAnimatedLineStyle()} />;
+        return <Animated.View style={animatedLineStyle} />;
       }
 
       return null;
@@ -218,14 +214,14 @@ const BarcodeMask: FC<BarcodeMaskProps> = memo(
           onLayout={onLayoutChange || noop}
           style={{
             ...styles.finder,
-            width: seftwidth,
-            height: seftheight,
+            width: finderWidth,
+            height: finderHeight,
           }}>
-          {seftRenderEdge('topLeft')}
-          {seftRenderEdge('topRight')}
-          {seftRenderEdge('bottomLeft')}
-          {seftRenderEdge('bottomRight')}
-          {seftRenderAnimated()}
+          {renderEdge('topLeft')}
+          {renderEdge('topRight')}
+          {renderEdge('bottomLeft')}
+          {renderEdge('bottomRight')}
+          {renderAnimated()}
         </View>
         <View style={styles.maskOuter} onLayout={onOuterLayout || noop}>
           <View
@@ -255,25 +251,7 @@ const BarcodeMask: FC<BarcodeMaskProps> = memo(
         </View>
       </View>
     );
-  },
+  }
 );
-
-BarcodeMask.defaultProps = {
-  width: 280,
-  height: 230,
-  edgeWidth: 20,
-  edgeHeight: 20,
-  edgeColor: '#fff',
-  edgeBorderWidth: 4,
-  edgeRadius: 0,
-  backgroundColor: '#eee',
-  maskOpacity: 1,
-  animatedLineColor: '#fff',
-  animatedLineOrientation: 'horizontal',
-  animatedLineThickness: 2,
-  animationDuration: 2000,
-  runTimingFn: runTiming,
-  showAnimatedLine: true,
-};
 
 export default BarcodeMask;

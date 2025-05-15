@@ -78,3 +78,7 @@ buck-out/
 .env
 .env.develop
 .env.production
+# Expo
+.expo
+dist/
+web-build/

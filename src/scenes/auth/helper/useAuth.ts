@@ -1,21 +1,21 @@
 import appleAuth, {
   appleAuthAndroid,
 } from '@invertase/react-native-apple-authentication';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import useToast from 'components/Toast/useToast';
 import SetupAxios from 'manager/axiosManager';
-import {navigateScreen} from 'navigation/RootNavigation';
-import {STACK_NAVIGATOR} from 'navigation/types';
-import {useState} from 'react';
-import {AccountActions} from 'scenes/account/redux/slice';
-import {useAppDispatch} from 'storeConfig/hook';
-import {isValidResponse} from 'utils/Utility';
+import { navigateScreen } from 'navigation/RootNavigation';
+import { STACK_NAVIGATOR } from 'navigation/types';
+import { useState } from 'react';
+import { AccountActions } from 'scenes/account/redux/slice';
+import { useAppDispatch } from 'storeConfig/hook';
+import { isValidResponse } from 'utils/Utility';
 import authApi from '../redux/api';
-import {AuthActions} from '../redux/slice';
-import {IReqRegister} from '../redux/types';
+import { AuthActions } from '../redux/slice';
+import { IReqRegister } from '../redux/types';
 import Config from 'react-native-config';
 import Platform from 'utils/Platform';
-import {IResponseType, IStatus} from 'constant/commonType';
+import { IResponseType, IStatus } from 'constant/commonType';
 import jwtDecode from 'jwt-decode';
 import config from 'react-native-config';
 import DeepLink from 'services/deeplink';
@@ -25,7 +25,7 @@ const useAuth = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const {addToast} = useToast();
+  const { addToast } = useToast();
 
   const onSignInGoogle = async () => {
     try {
@@ -33,11 +33,12 @@ const useAuth = () => {
       GoogleSignin.configure({
         webClientId: config.WEB_CLIENT_ID,
       });
-      // GoogleSignin.configure();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       await GoogleSignin.signOut();
-      const userInfo = await GoogleSignin.signIn();
-      if (userInfo) {
-        const {user: userData} = userInfo;
+      const googleResponse = await GoogleSignin.signIn();      
+      if (googleResponse && googleResponse.data && googleResponse.data.user) {
+        const userData = googleResponse.data.user;
+        const idToken = googleResponse.data.idToken;
         const referralCode = await DeepLink.getReferralCode();
         const userParse: IReqRegister = {
           idAuth: userData.id,
@@ -47,7 +48,7 @@ const useAuth = () => {
           email: userData.email || '',
           referral: referralCode,
           deviceID: Platform.deviceId,
-          tokenId: userInfo.idToken || '',
+          tokenId: idToken || '',
           platform: 'GOOGLE',
         };
         await useRegister(userParse);
@@ -62,8 +63,24 @@ const useAuth = () => {
           type: 'ERROR_V3',
         });
       }
-    } catch (err) {
-      const errorMess = err as IResponseType<IStatus>;
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      if (error.code) {
+        switch (error.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            console.log('User cancelled the login flow');
+            break;
+          case statusCodes.IN_PROGRESS:
+            console.log('Sign in is in progress already');
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            console.log('Play services not available or outdated');
+            break;
+          default:
+            console.log('Some other error happened:', error.message);
+        }
+      }
+      const errorMess = error as IResponseType<IStatus>;
       addToast({
         message:
           errorMess?.status?.message ||
@@ -72,7 +89,6 @@ const useAuth = () => {
         position: 'top',
         type: 'ERROR_V3',
       });
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -88,8 +104,6 @@ const useAuth = () => {
       dispatch(AuthActions.updateCoupleToken(dataToken));
       dispatch(AuthActions.setAccount(result.data.account));
       SetupAxios.setHeaderToken(dataToken.token);
-      // dispatch(AccountActions.setLocalAuthSuccess(userParse));
-      // return navigateScreen(STACK_NAVIGATOR.AUTHEN_ONBOARD);
       addToast({
         message: t('auth.registerSuccess'),
         position: 'top',
@@ -184,7 +198,6 @@ const useAuth = () => {
       const credentialState = await appleAuth.getCredentialStateForUser(
         appleAuthRequestResponse.user,
       );
-      // Ensure Apple returned a user identityToken
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const referralCode = await DeepLink.getReferralCode();
         const userParse: IReqRegister = {

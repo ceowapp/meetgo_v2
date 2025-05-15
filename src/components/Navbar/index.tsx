@@ -5,7 +5,6 @@ import {
   Animated,
   SafeAreaView,
   Platform,
-  LinearGradient
 } from 'react-native';
 import { navigateScreen } from 'navigation/RootNavigation';
 import { STACK_NAVIGATOR } from 'navigation/types';
@@ -18,7 +17,11 @@ type IContainerProps = {
   onScroll?: (event: any) => void;
 };
 
-const Navbar: React.FC<IContainerProps> = ({ style, children, onScroll }) => {
+const Navbar: React.FC<IContainerProps> = ({ 
+  style = {}, 
+  children = <></>, 
+  onScroll 
+}) => {
   const insets = useSafeAreaInsets();
   const [scrollY] = useState(new Animated.Value(0));
   const [isVisible, setIsVisible] = useState(true);
@@ -51,7 +54,7 @@ const Navbar: React.FC<IContainerProps> = ({ style, children, onScroll }) => {
   
   const shadowOpacity = headerElevation.interpolate({
     inputRange: [0, 5],
-    outputRange: [0, 0.25], // Increased shadow opacity
+    outputRange: [0, 0.25],
   });
   
   const handleScroll = onScroll ? 
@@ -115,10 +118,5 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   }
 });
-
-Navbar.defaultProps = {
-  children: <></>,
-  style: {},
-};
 
 export default Navbar;
