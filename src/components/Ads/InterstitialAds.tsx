@@ -1,7 +1,7 @@
 import { InterstitialAd } from 'react-native-google-mobile-ads';
-import AdManager from 'manager/adManager';
+import AdsManager from 'manager/adsManager';
 
-class InterstitialAdService {
+class InterstitialAdsService {
  constructor() {
    this.ad = null;
    this.isLoaded = false;
@@ -14,7 +14,7 @@ class InterstitialAdService {
      this.unsubscribeEvents();
    }
    
-   this.ad = InterstitialAd.createForAdRequest(AdManager.getInterstitialAdUnitId());
+   this.ad = InterstitialAd.createForAdRequest(AdsManager.getInterstitialAdUnitId());
    
    this.loadedListener = this.ad.addAdEventListener('loaded', () => {
      this.isLoaded = true;
@@ -61,4 +61,4 @@ class InterstitialAdService {
  }
 }
 
-export default new InterstitialAdService();
+export default new InterstitialAdsService();

@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
-import AdManager from 'manager/adManager';
+import AdsManager from 'manager/adsManager';
 
-const BannerAdComponent = ({ size = BannerAdSize.BANNER }) => {
+const BannerAdsComponent = ({ size = BannerAdSize.BANNER }) => {
   return (
     <View style={styles.container}>
       <BannerAd
-        unitId={AdManager.getBannerAdUnitId()}
+        unitId={AdsManager.getBannerAdUnitId()}
         size={size}
         requestOptions={{
           requestNonPersonalizedAdsOnly: true,
@@ -27,4 +27,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BannerAdComponent;
+export default BannerAdsComponent;

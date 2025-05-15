@@ -23,8 +23,8 @@ import {ProgressiveImage} from 'components/Image/ProgressiveImage';
 import LinearGradient from 'react-native-linear-gradient';
 import {ButtonPrimary} from 'components/Button/Primary';
 import { useTranslation } from 'react-i18next';
-import BannerAdComponent from 'components/Ads/BannerAd';
-import InterstitialAdService from 'components/Ads/InterstitialAd';
+import BannerAdsComponent from 'components/Ads/BannerAds';
+import InterstitialAdsService from 'components/Ads/InterstitialAds';
 import { useIsForeground } from 'scenes/meets/helper/useIsForeground';
 
 const SCAN_WIDTH = resWidth(200);
@@ -122,7 +122,7 @@ const QrScan = () => {
   useEffect(() => {
     // Pre-load the ad when component mounts for faster display later
     if (!adLoadedRef.current) {
-      InterstitialAdService.load().onLoad(() => {
+      InterstitialAdsService.load().onLoad(() => {
         console.log('Interstitial ad loaded and ready');
         adLoadedRef.current = true;
       });
@@ -144,18 +144,18 @@ const QrScan = () => {
       setIsAdLoading(true);
       
       setTimeout(() => {
-        if (InterstitialAdService.show()) {
+        if (InterstitialAdsService.show()) {
           console.log('Interstitial ad displayed');
           adShownRef.current = true;
           setAdShown(true);
           
           // Set up callback for when ad is closed
-          InterstitialAdService.onClose(() => {
+          InterstitialAdsService.onClose(() => {
             console.log('Interstitial ad closed');
             setIsAdLoading(false);
             
             // Pre-load the next ad after this one closes
-            InterstitialAdService.load();
+            InterstitialAdsService.load();
           });
         } else {
           console.log('Interstitial not ready to display yet');
@@ -163,7 +163,7 @@ const QrScan = () => {
           
           // Try to load the ad if showing failed
           if (!adLoadedRef.current) {
-            InterstitialAdService.load().onLoad(() => {
+            InterstitialAdsService.load().onLoad(() => {
               adLoadedRef.current = true;
             });
           }
@@ -257,7 +257,7 @@ const QrScan = () => {
         edgeBorderWidth={6}
       />
       <View style={styles.bannerAd}>
-        {cameraReady && <BannerAdComponent />}
+        {cameraReady && <BannerAdsComponent />}
       </View>
     </View>
   );
