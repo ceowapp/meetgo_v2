@@ -2,7 +2,7 @@ workflows:
   ios-release-build:
     name: iOS Release Build
     environment:
-       groups:
+      groups:
         - development
       vars:
         XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
