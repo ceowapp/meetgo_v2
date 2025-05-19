@@ -8,11 +8,10 @@ workflows:
         XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
         XCODE_SCHEME: "meetgo"
         IPHONEOS_DEPLOYMENT_TARGET: "15.5"
-        # Add these as environment variables in Codemagic
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "BD46Y2FML8"
+        APP_STORE_CONNECT_ISSUER_ID: "c76b0f32-e565-4479-90c9-edc2487340a7"
         BUNDLE_ID: "app.meetgo.vn" # Replace with your actual bundle ID
-        TEAM_ID: "$TEAM_ID" # Your Apple Developer Team ID
+        TEAM_ID: "M73GARWH95" # Your Apple Developer Team ID
       xcode: latest
       cocoapods: default
       ios_signing:
