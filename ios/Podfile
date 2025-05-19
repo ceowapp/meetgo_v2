@@ -49,7 +49,6 @@ target 'meetgo' do
     :fabric_enabled => flags[:fabric_enabled],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-  pod 'Google-Maps-iOS-Utils', :git => 'https://github.com/Simon-TechForm/google-maps-ios-utils.git', :branch => 'feat/support-apple-silicon'
   rn_maps_path = '../node_modules/react-native-maps'
   pod 'react-native-google-maps', :path => rn_maps_path
   post_install do |installer|
