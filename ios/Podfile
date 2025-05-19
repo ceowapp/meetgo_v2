@@ -1,5 +1,4 @@
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
-
 def node_require(script)
   require Pod::Executable.execute_command('node', ['-p',
     "require.resolve(
@@ -7,12 +6,9 @@ def node_require(script)
       {paths: [process.argv[1]]},
     )", __dir__]).strip
 end
-
 node_require('react-native/scripts/react_native_pods.rb')
 node_require('react-native-permissions/scripts/setup.rb')
-
 platform :ios, '12.4'
-
 # ⬇️ Uncomment the permissions you need
 setup_permissions([
   # 'AppTrackingTransparency',
@@ -36,25 +32,19 @@ setup_permissions([
   # 'SpeechRecognition',
   # 'StoreKit',
 ])
-
-flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
-
+# Replace the problematic line with this:
+flipper_config = ENV['NO_FLIPPER'] == "1" ? { 'Flipper' => false } : { 'Flipper' => true }
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
-
 target 'meetgo' do
   # Removed: use_expo_modules!
-
   config = use_native_modules!
-
   flags = get_default_flags()
-
   require 'json'
   podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
-
   use_react_native!(
     :path => config[:reactNativePath],
     :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
@@ -62,26 +52,21 @@ target 'meetgo' do
     :flipper_configuration => flipper_config,
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-
   pod 'Google-Maps-iOS-Utils', :git => 'https://github.com/Simon-TechForm/google-maps-ios-utils.git', :branch => 'feat/support-apple-silicon'
   rn_maps_path = '../node_modules/react-native-maps'
   pod 'react-native-google-maps', :path => rn_maps_path
-
   post_install do |installer|
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
-
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.4'
-
         if target.respond_to?(:product_type) and target.product_type == "com.apple.product-type.bundle"
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
-
         if config.name == 'Release' && config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] == '-O'
           config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
         end
