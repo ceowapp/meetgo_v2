@@ -15,12 +15,11 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: development
-        bundle_identifier: $BUNDLE_ID
-        # Make sure you've uploaded both the provisioning profile AND the certificate
-        # with private key in the Codemagic UI
+        # Removed distribution_type and bundle_identifier
         provisioning_profiles:
-          - profile_name: "provisioning_dev"
+          - profile_name: "Provisioning Profile"
+        certificates:
+          - certificate_name: "IOS Certificate" # Make sure this matches your certificate in Codemagic
     scripts:
       - name: Install dependencies
         script: |
@@ -91,8 +90,6 @@ workflows:
           -archivePath build/meetgo.xcarchive \
           IPHONEOS_DEPLOYMENT_TARGET=15.5 \
           DEVELOPMENT_TEAM="$TEAM_ID" \
-          CODE_SIGN_STYLE="Manual" \
-          PROVISIONING_PROFILE_SPECIFIER="provisioning_dev" \
           SWIFT_OPTIMIZATION_LEVEL="-Onone" \
           -allowProvisioningUpdates \
           archive | tee xcodebuild.log
