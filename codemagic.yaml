@@ -18,9 +18,10 @@ workflows:
         TEAM_ID: "M73GARWH95"
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: $BUNDLE_ID
+        provisioning_profiles:
+          - Provisioning Profile
+        certificates:
+          - IOS Certificate
     scripts:
       - name: Install dependencies
         script: |
