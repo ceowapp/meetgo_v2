@@ -59,8 +59,10 @@ react {
     autolinkLibrariesWithApp()
 }
 
+def enableHermes = project.hasProperty("hermesEnabled") && project.hermesEnabled.toBoolean()
+
 project.ext.react = [
-    enableHermes: true,
+   enableHermes: enableHermes,
 ]
 
 project.ext.envConfigFiles = [
@@ -83,7 +85,6 @@ apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 def enableProguardInReleaseBuilds = false
 def enableSeparateBuildPerCPUArchitecture = false
 def jscFlavor = 'org.webkit:android-jsc:+'
-def enableHermes = project.ext.react.get("enableHermes", false)
 
 def reactNativeArchitectures() {
     def value = project.getProperties().get("reactNativeArchitectures")

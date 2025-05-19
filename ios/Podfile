@@ -47,7 +47,7 @@ target 'meetgo' do
   podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
   use_react_native!(
     :path => config[:reactNativePath],
-    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
+    :hermes_enabled => podfile_properties['react.jsEngine'] == nil || podfile_properties['react.jsEngine'] == 'hermes',
     :fabric_enabled => flags[:fabric_enabled],
     :flipper_configuration => flipper_config,
     :app_path => "#{Pod::Config.instance.installation_root}/.."
