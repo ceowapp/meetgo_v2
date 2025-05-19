@@ -32,7 +32,8 @@ workflows:
           
           # Set up code signing settings
           xcode-project use-profiles --warn-only
-          
+          xcode-project use-automatic-signing --project-path="ios/meetgo.xcodeproj" --target="meetgo"
+
       - name: Update Pod targets and Swift optimization
         script: |
           cd ios
@@ -123,3 +124,6 @@ workflows:
         notify:
           success: true
           failure: true
+
+
+
