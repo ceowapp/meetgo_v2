@@ -23,12 +23,8 @@ workflows:
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
-            --create \
-            --team-id "$TEAM_ID"
-          
-          # Set automatic signing for the project
-          xcode-project use-profiles --project "$XCODE_WORKSPACE" --target "meetgo"
-          
+            --create
+                    
       - name: Install dependencies
         script: |
           npm install --legacy-peer-deps
@@ -60,11 +56,6 @@ workflows:
               <false/>
               <key>uploadSymbols</key>
               <true/>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>$BUNDLE_ID Development</string>
-              </dict>
           </dict>
           </plist>
           EOL
