@@ -7,7 +7,10 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
         XCODE_SCHEME: "meetgo"
-        IPHONEOS_DEPLOYMENT_TARGET: "13.4"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.5"
+        # Add these as environment variables in Codemagic
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
         BUNDLE_ID: "app.meetgo.vn" # Replace with your actual bundle ID
         TEAM_ID: "$TEAM_ID" # Your Apple Developer Team ID
       xcode: latest
@@ -18,20 +21,12 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
-          # Using the Codemagic CLI tools for iOS code signing
-          # This avoids the need for manual app-store-connect command configuration
-          keychain initialize
-          
-          # Fetch the signing files from Apple servers using Codemagic's built-in credentials
-          echo "Fetching signing files for bundle identifier: $BUNDLE_ID"
+          # Fetch signing files
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
             --create
           
-          # Store the fetched certificates in the keychain
-          keychain add-certificates
-          
-          # Update the project's code signing settings
+          # Set automatic signing for the project
           xcode-project use-profiles
           
       - name: Install dependencies
@@ -39,11 +34,14 @@ workflows:
           npm install --legacy-peer-deps
           cd ios && pod install && cd ..
           
-      - name: Update Pod targets
+      - name: Update Pod targets and Swift optimization
         script: |
           cd ios
-          # Update deployment targets to 13.4 
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 13.4/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          # Update deployment targets to 15.5 
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          
+          # Fix Swift optimization level for debugging
+          sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -Owholemodule;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
           cd ..
           
       - name: Generate exportOptions.plist
@@ -65,6 +63,11 @@ workflows:
               <false/>
               <key>uploadSymbols</key>
               <true/>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$BUNDLE_ID Development</string>
+              </dict>
           </dict>
           </plist>
           EOL
@@ -89,9 +92,8 @@ workflows:
           -configuration Release \
           -sdk iphoneos \
           -archivePath build/meetgo.xcarchive \
-          IPHONEOS_DEPLOYMENT_TARGET=13.4 \
+          IPHONEOS_DEPLOYMENT_TARGET=15.5 \
           DEVELOPMENT_TEAM="$TEAM_ID" \
-          SWIFT_OPTIMIZATION_LEVEL="-Owholemodule" \
           CODE_SIGN_IDENTITY="Apple Development" \
           CODE_SIGN_STYLE="Automatic" \
           -allowProvisioningUpdates \
@@ -119,5 +121,3 @@ workflows:
       email:
         recipients:
           - your.email@example.com
-
-
