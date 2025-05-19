@@ -28,8 +28,11 @@ workflows:
           # Set automatic signing for the project
           xcode-project use-profiles
           
-      - name: Install dependencies
+      - name: Install dependencies and prep environment
         script: |
+          # Install xcodeproj gem for Ruby scripts
+          sudo gem install xcodeproj || echo "Failed to install xcodeproj gem, may already be installed"
+          
           npm install --legacy-peer-deps
           cd ios && pod install && cd ..
           
@@ -45,6 +48,83 @@ workflows:
           
           # For good measure, let's also make sure the main project has the right settings
           find . -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -O[a-z]*;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
+          
+          # Fix the duplicate files issue in ReactCodegen target
+          echo "Fixing duplicate files in ReactCodegen target..."
+          ruby -e '
+          require "xcodeproj"
+          project_path = "Pods/Pods.xcodeproj"
+          project = Xcodeproj::Project.open(project_path)
+          
+          # Find the ReactCodegen target
+          target = project.targets.find { |t| t.name == "ReactCodegen" }
+          if target
+            # Get all the build phases that are compile sources
+            compile_phases = target.build_phases.select { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXSourcesBuildPhase) }
+            
+            compile_phases.each do |phase|
+              # Create a hash to track files by path
+              files_by_path = {}
+              
+              # Find duplicates
+              phase.files.each do |build_file|
+                path = build_file.file_ref.real_path.to_s
+                if files_by_path[path]
+                  # Mark as duplicate to remove
+                  files_by_path[path] << build_file
+                else
+                  # First occurrence
+                  files_by_path[path] = [build_file]
+                end
+              end
+              
+              # Remove duplicates, keeping the first occurrence
+              files_by_path.each do |path, build_files|
+                if build_files.length > 1
+                  # Keep the first one, remove the rest
+                  build_files[1..-1].each do |bf|
+                    phase.remove_build_file(bf)
+                  end
+                end
+              end
+            end
+            
+            # Save the project
+            project.save
+            puts "Successfully removed duplicate files from ReactCodegen target"
+          else
+            puts "ReactCodegen target not found"
+          end
+          ' || echo "Ruby script failed, continuing anyway"
+          
+          # Additional fix for react-native-config script phase
+          ruby -e '
+          require "xcodeproj"
+          project_path = "Pods/Pods.xcodeproj"
+          project = Xcodeproj::Project.open(project_path)
+          
+          # Find the react-native-config target
+          target = project.targets.find { |t| t.name == "react-native-config" }
+          if target
+            # Get all script phases
+            script_phases = target.build_phases.select { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) }
+            
+            # Find the specific script phase
+            config_codegen_phase = script_phases.find { |phase| phase.name == "[CP-User] Config codegen" }
+            if config_codegen_phase
+              # Set the "Based on dependency analysis" option to true
+              config_codegen_phase.always_out_of_date = 0
+              
+              # Save the project
+              project.save
+              puts "Successfully fixed script phase in react-native-config target"
+            else
+              puts "Config codegen script phase not found"
+            end
+          else
+            puts "react-native-config target not found"
+          end
+          ' || echo "Ruby script failed, continuing anyway"
           cd ..
           
       - name: Generate exportOptions.plist
