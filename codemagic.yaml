@@ -9,8 +9,6 @@ workflows:
         XCODE_SCHEME: "meetgo"
         IPHONEOS_DEPLOYMENT_TARGET: "15.5"
         # Add these as environment variables in Codemagic
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
         BUNDLE_ID: "app.meetgo.vn" # Replace with your actual bundle ID
         TEAM_ID: "$TEAM_ID" # Your Apple Developer Team ID
       xcode: latest
@@ -21,10 +19,22 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
+          # Using the Codemagic CLI tools for iOS code signing
+          # This avoids the need for manual app-store-connect command configuration
+          keychain initialize
+          
+          # Fetch the signing files from Apple servers using Codemagic's built-in credentials
+          echo "Fetching signing files for bundle identifier: $BUNDLE_ID"
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
             --create
-                    
+          
+          # Store the fetched certificates in the keychain
+          keychain add-certificates
+          
+          # Update the project's code signing settings
+          xcode-project use-profiles
+          
       - name: Install dependencies
         script: |
           npm install --legacy-peer-deps
