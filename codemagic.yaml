@@ -3,6 +3,8 @@ workflows:
     name: iOS Release Build
     instance_type: mac_mini_m1
     max_build_duration: 120
+    integrations:
+      app_store_connect: Key Test
     environment:
       groups:
         - development
@@ -16,8 +18,6 @@ workflows:
         TEAM_ID: "M73GARWH95"
       xcode: latest
       cocoapods: default
-      integrations:
-        app_store_connect: Key Test
       ios_signing:
         distribution_type: development
         bundle_identifier: $BUNDLE_ID
@@ -62,8 +62,6 @@ workflows:
               <string>development</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
-              <key>signingStyle</key>
-              <string>manual</string>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>uploadBitcode</key>
@@ -126,3 +124,5 @@ workflows:
         notify:
           success: true
           failure: true
+
+
