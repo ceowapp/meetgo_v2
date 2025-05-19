@@ -458,8 +458,6 @@
 					"-lc++",
 					"$(inherited)",
 				);
-				CODE_SIGN_STYLE = Automatic;
-			    PROVISIONING_PROFILE_SPECIFIER = "";
 			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
@@ -486,8 +484,6 @@
 					"-ObjC",
 					"-lc++",
 				);
-				CODE_SIGN_STYLE = Automatic;
-			    PROVISIONING_PROFILE_SPECIFIER = "";
 			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
@@ -515,8 +511,6 @@
 					"-ObjC",
 					"-lc++",
 				);
-				CODE_SIGN_STYLE = Automatic;
-			    PROVISIONING_PROFILE_SPECIFIER = "";
 			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
