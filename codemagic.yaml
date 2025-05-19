@@ -1,6 +1,8 @@
 workflows:
   ios-release-build:
     name: iOS Release Build
+    instance_type: mac_mini_m1
+    max_build_duration: 120
     environment:
       groups:
         - development
@@ -14,6 +16,8 @@ workflows:
         TEAM_ID: "M73GARWH95"
       xcode: latest
       cocoapods: default
+      integrations:
+        app_store_connect: Key Test
       ios_signing:
         distribution_type: development
         bundle_identifier: $BUNDLE_ID
