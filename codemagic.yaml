@@ -15,7 +15,7 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: app_store
+        distribution_type: development
         bundle_identifier: $BUNDLE_ID
     scripts:
       - name: Install dependencies
