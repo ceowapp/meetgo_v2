@@ -15,25 +15,24 @@ setup_permissions([
   # 'Bluetooth',
   # 'Calendars',
   # 'CalendarsWriteOnly',
-  # 'Camera',
   # 'Contacts',
   # 'FaceID',
-  # 'LocationAccuracy',
-  # 'LocationAlways',
-  # 'LocationWhenInUse',
-  # 'MediaLibrary',
-  # 'Microphone',
+  'Camera',
+  'LocationAccuracy',
+  'LocationAlways',
+  'LocationWhenInUse',
+  'MediaLibrary',
+  'Microphone',
+  'PhotoLibrary',
+  'PhotoLibraryAddOnly',
   # 'Motion',
   # 'Notifications',
-  # 'PhotoLibrary',
-  # 'PhotoLibraryAddOnly',
   # 'Reminders',
   # 'Siri',
   # 'SpeechRecognition',
   # 'StoreKit',
 ])
-# Replace the problematic line with this:
-flipper_config = ENV['NO_FLIPPER'] == "1" ? { 'Flipper' => false } : { 'Flipper' => true }
+# Remove Flipper configuration entirely
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
@@ -47,9 +46,9 @@ target 'meetgo' do
   podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
   use_react_native!(
     :path => config[:reactNativePath],
-    :hermes_enabled => podfile_properties['react.jsEngine'] == nil || podfile_properties['react.jsEngine'] == 'hermes',
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
     :fabric_enabled => flags[:fabric_enabled],
-    :flipper_configuration => flipper_config,
+    # Remove flipper_configuration parameter
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
   pod 'Google-Maps-iOS-Utils', :git => 'https://github.com/Simon-TechForm/google-maps-ios-utils.git', :branch => 'feat/support-apple-silicon'
