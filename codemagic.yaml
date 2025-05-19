@@ -7,8 +7,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
         XCODE_SCHEME: "meetgo"
-        IPHONEOS_DEPLOYMENT_TARGET: "15.5"
-        # Add these as environment variables in Codemagic
+        IPHONEOS_DEPLOYMENT_TARGET: "13.4"
         BUNDLE_ID: "app.meetgo.vn" # Replace with your actual bundle ID
         TEAM_ID: "$TEAM_ID" # Your Apple Developer Team ID
       xcode: latest
@@ -43,8 +42,8 @@ workflows:
       - name: Update Pod targets
         script: |
           cd ios
-          # Update deployment targets to 15.5 
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          # Update deployment targets to 13.4 
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 13.4/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
           cd ..
           
       - name: Generate exportOptions.plist
@@ -90,8 +89,9 @@ workflows:
           -configuration Release \
           -sdk iphoneos \
           -archivePath build/meetgo.xcarchive \
-          IPHONEOS_DEPLOYMENT_TARGET=15.5 \
+          IPHONEOS_DEPLOYMENT_TARGET=13.4 \
           DEVELOPMENT_TEAM="$TEAM_ID" \
+          SWIFT_OPTIMIZATION_LEVEL="-Owholemodule" \
           CODE_SIGN_IDENTITY="Apple Development" \
           CODE_SIGN_STYLE="Automatic" \
           -allowProvisioningUpdates \
@@ -119,3 +119,5 @@ workflows:
       email:
         recipients:
           - your.email@example.com
+
+
