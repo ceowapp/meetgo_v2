@@ -16,7 +16,7 @@ workflows:
         APP_STORE_CONNECT_ISSUER_ID: "c76b0f32-e565-4479-90c9-edc2487340a7"
         BUNDLE_ID: "app.meetgo.vn"
         TEAM_ID: "M73GARWH95"
-      xcode: 16.2
+      xcode: 15.3
       cocoapods: default
       ios_signing:
         provisioning_profiles:
