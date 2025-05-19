@@ -27,7 +27,7 @@ workflows:
           
           # Set automatic signing for the project
           xcode-project use-profiles
-          
+      
       - name: Install dependencies and prep environment
         script: |
           # Install xcodeproj gem for Ruby scripts
@@ -35,6 +35,32 @@ workflows:
           
           npm install --legacy-peer-deps
           cd ios && pod install && cd ..
+          
+      - name: Prepare React Native environment
+        script: |
+          # For React Native New Architecture issues, create this file if it doesn't exist
+          mkdir -p ios/build/generated/ios/react/renderer/components/safeareacontext/
+          
+          # Create or overwrite the problematic files to prevent duplicates
+          cat > ios/build/generated/ios/react/renderer/components/safeareacontext/States.h << EOL
+          // Empty placeholder to prevent duplicate file issues
+          #pragma once
+          
+          namespace facebook {
+          namespace react {
+            // Empty namespace to prevent compilation errors
+          }}
+          EOL
+          
+          cat > ios/build/generated/ios/react/renderer/components/safeareacontext/States.cpp << EOL
+          // Empty placeholder to prevent duplicate file issues
+          #include "States.h"
+          
+          namespace facebook {
+          namespace react {
+            // Empty namespace to prevent compilation errors
+          }}
+          EOL
           
       - name: Update Pod targets and Swift optimization
         script: |
@@ -49,82 +75,113 @@ workflows:
           # For good measure, let's also make sure the main project has the right settings
           find . -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -O[a-z]*;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
           
-          # Fix the duplicate files issue in ReactCodegen target
+          # Add special flags to address various React Native issues
+          cat >> Pods/Target\ Support\ Files/ReactCodegen/ReactCodegen.release.xcconfig << EOL
+          
+          # Fix duplicate files build issues
+          GCC_PREPROCESSOR_DEFINITIONS = \$(inherited) COCOAPODS=1 FB_SONARKIT_ENABLED=1 RCT_NEW_ARCH_ENABLED=1
+          DEAD_CODE_STRIPPING = NO
+          EOL
+          
+          # Fix the duplicate files issue in ReactCodegen target more comprehensively
           echo "Fixing duplicate files in ReactCodegen target..."
           ruby -e '
           require "xcodeproj"
-          project_path = "Pods/Pods.xcodeproj"
-          project = Xcodeproj::Project.open(project_path)
-          
-          # Find the ReactCodegen target
-          target = project.targets.find { |t| t.name == "ReactCodegen" }
-          if target
-            # Get all the build phases that are compile sources
-            compile_phases = target.build_phases.select { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXSourcesBuildPhase) }
+          begin
+            project_path = "Pods/Pods.xcodeproj"
+            project = Xcodeproj::Project.open(project_path)
             
-            compile_phases.each do |phase|
-              # Create a hash to track files by path
-              files_by_path = {}
+            # Find the ReactCodegen target
+            target = project.targets.find { |t| t.name == "ReactCodegen" }
+            if target
+              puts "Found ReactCodegen target"
               
-              # Find duplicates
-              phase.files.each do |build_file|
-                path = build_file.file_ref.real_path.to_s
-                if files_by_path[path]
-                  # Mark as duplicate to remove
-                  files_by_path[path] << build_file
-                else
-                  # First occurrence
-                  files_by_path[path] = [build_file]
-                end
-              end
+              # Get all build phases
+              all_phases = target.build_phases
+              puts "Target has #{all_phases.length} build phases"
               
-              # Remove duplicates, keeping the first occurrence
-              files_by_path.each do |path, build_files|
-                if build_files.length > 1
-                  # Keep the first one, remove the rest
-                  build_files[1..-1].each do |bf|
-                    phase.remove_build_file(bf)
+              # Process all types of build phases that might have duplicates
+              all_phases.each do |phase|
+                next unless phase.is_a?(Xcodeproj::Project::Object::PBXSourcesBuildPhase) || 
+                           phase.is_a?(Xcodeproj::Project::Object::PBXHeadersBuildPhase) ||
+                           phase.is_a?(Xcodeproj::Project::Object::PBXResourcesBuildPhase)
+                
+                phase_name = phase.class.name.split("::").last
+                puts "Processing #{phase_name} with #{phase.files.length} files"
+                
+                # Track files already seen
+                seen_files = {}
+                files_to_remove = []
+                
+                phase.files.each do |build_file|
+                  next unless build_file.file_ref
+                  
+                  # Get a good identifier for the file
+                  file_path = nil
+                  begin
+                    file_path = build_file.file_ref.real_path.to_s
+                  rescue
+                    # If real_path fails, try display_name or path
+                    file_path = build_file.file_ref.display_name || build_file.file_ref.path
+                  end
+                  
+                  if file_path
+                    if seen_files[file_path]
+                      # This is a duplicate
+                      files_to_remove << build_file
+                      puts " - Found duplicate: #{file_path}"
+                    else
+                      # First time seeing this file
+                      seen_files[file_path] = true
+                    end
                   end
                 end
+                
+                # Remove all duplicates
+                files_to_remove.each do |bf|
+                  phase.remove_build_file(bf)
+                end
+                puts " - Removed #{files_to_remove.length} duplicate files from #{phase_name}"
               end
-            end
-            
-            # Save the project
-            project.save
-            puts "Successfully removed duplicate files from ReactCodegen target"
-          else
-            puts "ReactCodegen target not found"
-          end
-          ' || echo "Ruby script failed, continuing anyway"
-          
-          # Additional fix for react-native-config script phase
-          ruby -e '
-          require "xcodeproj"
-          project_path = "Pods/Pods.xcodeproj"
-          project = Xcodeproj::Project.open(project_path)
-          
-          # Find the react-native-config target
-          target = project.targets.find { |t| t.name == "react-native-config" }
-          if target
-            # Get all script phases
-            script_phases = target.build_phases.select { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) }
-            
-            # Find the specific script phase
-            config_codegen_phase = script_phases.find { |phase| phase.name == "[CP-User] Config codegen" }
-            if config_codegen_phase
-              # Set the "Based on dependency analysis" option to true
-              config_codegen_phase.always_out_of_date = 0
               
               # Save the project
               project.save
-              puts "Successfully fixed script phase in react-native-config target"
+              puts "Successfully updated ReactCodegen target"
             else
-              puts "Config codegen script phase not found"
+              puts "ReactCodegen target not found"
             end
-          else
-            puts "react-native-config target not found"
+            
+            # Also fix the react-native-config script issue
+            target = project.targets.find { |t| t.name == "react-native-config" }
+            if target
+              script_phases = target.build_phases.select { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) }
+              script_phases.each do |phase|
+                if phase.name == "[CP-User] Config codegen" || phase.display_name == "[CP-User] Config codegen"
+                  # Try to fix the based on dependency analysis
+                  phase.always_out_of_date = 0
+                  puts "Fixed Config codegen script phase"
+                  
+                  # As a fallback, add input/output files to force dependency analysis
+                  phase.input_paths ||= []
+                  if phase.input_paths.empty?
+                    phase.input_paths << "${PODS_ROOT}/../.env"
+                  end
+                  
+                  phase.output_paths ||= []
+                  if phase.output_paths.empty?
+                    phase.output_paths << "${DERIVED_FILE_DIR}/react-native-config-codegen-output.txt"
+                  end
+                end
+              end
+              project.save
+            end
+          rescue => e
+            puts "Error in Ruby script: #{e.message}"
+            puts e.backtrace
           end
           ' || echo "Ruby script failed, continuing anyway"
+          
+          echo "Completed Xcode project modifications"
           cd ..
           
       - name: Generate exportOptions.plist
@@ -162,13 +219,17 @@ workflows:
           
           echo "Starting build process with team ID: $TEAM_ID"
           
+          # Diagnostic check - list problematic files before cleaning
+          echo "Checking for duplicate files before cleaning..."
+          find ios/build/generated -name "States.*" | sort
+          
           # Clean build
           xcodebuild clean \
           -workspace "$XCODE_WORKSPACE" \
           -scheme "$XCODE_SCHEME" \
           -configuration Release
           
-          # Build archive with explicit Swift optimization override
+          # Build with additional flags to address React Native issues
           xcodebuild \
           -workspace "$XCODE_WORKSPACE" \
           -scheme "$XCODE_SCHEME" \
@@ -180,6 +241,8 @@ workflows:
           CODE_SIGN_IDENTITY="Apple Development" \
           CODE_SIGN_STYLE="Automatic" \
           SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+          GCC_PREPROCESSOR_DEFINITIONS="FB_SONARKIT_ENABLED=1 RCT_NEW_ARCH_ENABLED=1" \
+          OTHER_CFLAGS="-Wno-duplicate-decl-specifier -Wno-deprecated-declarations" \
           -allowProvisioningUpdates \
           archive | tee xcodebuild.log
           
@@ -195,7 +258,7 @@ workflows:
           else
             echo "Archive creation failed"
             # Print the last part of the log
-            tail -n 100 xcodebuild.log
+            tail -n 500 xcodebuild.log
             exit 1
           fi
     artifacts:
