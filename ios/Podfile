@@ -8,7 +8,7 @@ def node_require(script)
 end
 node_require('react-native/scripts/react_native_pods.rb')
 node_require('react-native-permissions/scripts/setup.rb')
-platform :ios, '12.4'
+platform :ios, '13.4'
 # ⬇️ Uncomment the permissions you need
 setup_permissions([
   # 'AppTrackingTransparency',
