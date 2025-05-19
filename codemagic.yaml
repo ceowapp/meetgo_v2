@@ -28,11 +28,15 @@ workflows:
           # Fetch signing files
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
           
           # Set up code signing settings
           xcode-project use-profiles --warn-only
-          xcode-project use-automatic-signing --project-path="ios/meetgo.xcodeproj" --target="meetgo"
+          
+          # Update project settings for automatic signing
+          /usr/libexec/PlistBuddy -c "Set :objects:*:buildSettings:CODE_SIGN_STYLE Automatic" ios/meetgo.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :objects:*:buildSettings:DEVELOPMENT_TEAM $TEAM_ID" ios/meetgo.xcodeproj/project.pbxproj
 
       - name: Update Pod targets and Swift optimization
         script: |
@@ -124,6 +128,3 @@ workflows:
         notify:
           success: true
           failure: true
-
-
-
