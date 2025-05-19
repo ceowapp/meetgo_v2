@@ -15,16 +15,23 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        # Removed distribution_type and bundle_identifier
-        provisioning_profiles:
-          - profile_name: "Provisioning Profile"
-        certificates:
-          - certificate_name: "IOS Certificate" # Make sure this matches your certificate in Codemagic
+        distribution_type: development
+        bundle_identifier: $BUNDLE_ID
     scripts:
       - name: Install dependencies
         script: |
           npm install && npx patch-package
           cd ios && pod install && cd ..
+          
+      - name: Set up code signing
+        script: |
+          # for this command to work
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          
+          # Set up code signing settings
+          xcode-project use-profiles --warn-only
           
       - name: Update Pod targets and Swift optimization
         script: |
@@ -53,11 +60,6 @@ workflows:
               <string>$TEAM_ID</string>
               <key>signingStyle</key>
               <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>$BUNDLE_ID</key>
-                  <string>provisioning_dev</string>
-              </dict>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>uploadBitcode</key>
