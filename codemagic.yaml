@@ -18,6 +18,7 @@ workflows:
         TEAM_ID: "M73GARWH95"
       xcode: latest
       cocoapods: default
+      ios_signing:
         provisioning_profiles:
           - Provisioning Profile
         certificates:
