@@ -21,24 +21,10 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
-          echo "Setting up code signing..."
-          # Create a temporary directory for the key
-          mkdir -p ~/private_keys
-          
-          # Decode and save the p8 file (assuming P8_BASE64 is the p8 file encoded as base64)
-          echo $P8_BASE64 | base64 --decode > ~/private_keys/api_key.p8
-          
-          # Set up keychain and certificates
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
             --create \
-            --api-key-path ~/private_keys/api_key.p8 \
-            --api-key-id $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            --api-key-issuer-id $APP_STORE_CONNECT_ISSUER_ID \
-            --team-id $TEAM_ID
-            
-          # Set up provisioning profiles
-          keychain initialize
+            --team-id "$TEAM_ID"
           
           # Set automatic signing for the project
           xcode-project use-profiles --project "$XCODE_WORKSPACE" --target "meetgo"
