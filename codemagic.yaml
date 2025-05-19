@@ -7,7 +7,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
         XCODE_SCHEME: "meetgo"
-        IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.5"
       xcode: latest
       cocoapods: default
     scripts:
@@ -18,8 +18,10 @@ workflows:
       - name: Update Pod targets
         script: |
           cd ios
-          # Update any potential deployment target mismatches in Pods
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          # Update all deployment targets to 15.5 instead of 13.0
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          # Also check for any other deployment target versions and update them
+          find Pods -name "*.xcconfig" -exec grep -l "IPHONEOS_DEPLOYMENT_TARGET" {} \; | xargs cat | grep "IPHONEOS_DEPLOYMENT_TARGET"
           cd ..
       - name: Generate exportOptions.plist
         script: |
@@ -41,29 +43,57 @@ workflows:
           </dict>
           </plist>
           EOL
-      - name: Build iOS app with verbose output
+      - name: Build iOS app with enhanced logging
         script: |
           mkdir -p build
           set -x  # Enable verbose output
+          
+          # Check podfile for deployment target
+          echo "==== CHECKING PODFILE ===="
+          cat ios/Podfile | grep -i "platform"
+          
+          # Check project.pbxproj for deployment target
+          echo "==== CHECKING PROJECT SETTINGS ===="
+          grep -r "IPHONEOS_DEPLOYMENT_TARGET" ios/*.xcodeproj
+          
+          # Clean build
+          echo "==== CLEANING BUILD ===="
           xcodebuild clean \
           -workspace "$XCODE_WORKSPACE" \
           -scheme "$XCODE_SCHEME" \
           -configuration Release
           
+          # Run build with detailed logs
+          echo "==== STARTING ARCHIVE PROCESS ===="
           xcodebuild \
           -workspace "$XCODE_WORKSPACE" \
           -scheme "$XCODE_SCHEME" \
           -configuration Release \
           -sdk iphoneos \
           -archivePath build/meetgo.xcarchive \
-          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
+          IPHONEOS_DEPLOYMENT_TARGET=15.5 \
           OTHER_CODE_SIGN_FLAGS="--keychain build.keychain" \
           CODE_SIGN_IDENTITY="Apple Development" \
           -allowProvisioningUpdates \
-          archive -verbose
+          archive -verbose | tee xcodebuild.log
           
-          # Check if archive was created
-          if [ -d "build/meetgo.xcarchive" ]; then
+          # If archive fails, print more detailed error info
+          if [ ! -d "build/meetgo.xcarchive" ]; then
+            echo "==== ARCHIVE FAILED - SHOWING DETAILED LOGS ===="
+            echo "Last 50 lines of build log:"
+            tail -n 50 xcodebuild.log
+            
+            echo "==== CHECKING FOR COMMON ERRORS ===="
+            grep -i "error:" xcodebuild.log
+            grep -i "fatal error:" xcodebuild.log
+            grep -i "warning:" xcodebuild.log | grep -i "ios deployment target"
+            
+            echo "==== CHECKING SIGNING SETTINGS ===="
+            grep -i "code sign" xcodebuild.log
+            
+            echo "Archive creation failed"
+            exit 1
+          else
             echo "Archive created successfully"
             xcodebuild \
             -exportArchive \
@@ -72,9 +102,7 @@ workflows:
             -exportPath build/ios \
             -allowProvisioningUpdates \
             -verbose
-          else
-            echo "Archive creation failed"
-            exit 1
           fi
     artifacts:
       - build/ios/*.ipa
+      - xcodebuild.log
