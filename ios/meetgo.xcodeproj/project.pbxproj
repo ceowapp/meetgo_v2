@@ -431,6 +431,9 @@
 					"-lc++",
 					"$(inherited)",
 				);
+				CODE_SIGN_STYLE = Automatic;
+			    PROVISIONING_PROFILE_SPECIFIER = "";
+			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/meetgo.app/meetgo";
@@ -455,6 +458,9 @@
 					"-lc++",
 					"$(inherited)",
 				);
+				CODE_SIGN_STYLE = Automatic;
+			    PROVISIONING_PROFILE_SPECIFIER = "";
+			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/meetgo.app/meetgo";
@@ -480,6 +486,9 @@
 					"-ObjC",
 					"-lc++",
 				);
+				CODE_SIGN_STYLE = Automatic;
+			    PROVISIONING_PROFILE_SPECIFIER = "";
+			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -506,6 +515,9 @@
 					"-ObjC",
 					"-lc++",
 				);
+				CODE_SIGN_STYLE = Automatic;
+			    PROVISIONING_PROFILE_SPECIFIER = "";
+			    DEVELOPMENT_TEAM = M73GARWH95;
 				PRODUCT_BUNDLE_IDENTIFIER = app.meetgo.vn;
 				PRODUCT_NAME = meetgo;
 				SWIFT_VERSION = 5.0;
