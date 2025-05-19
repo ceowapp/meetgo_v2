@@ -39,8 +39,12 @@ workflows:
           # Update deployment targets to 15.5 
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
           
-          # Fix Swift optimization level for debugging
-          sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -Owholemodule;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          # Fix Swift optimization level for debugging (handling both -Owholemodule and -O)
+          find Pods/Target\ Support\ Files -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -Owholemodule;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
+          find Pods/Target\ Support\ Files -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -O;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
+          
+          # For good measure, let's also make sure the main project has the right settings
+          find . -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -O[a-z]*;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
           cd ..
           
       - name: Generate exportOptions.plist
@@ -84,7 +88,7 @@ workflows:
           -scheme "$XCODE_SCHEME" \
           -configuration Release
           
-          # Build archive
+          # Build archive with explicit Swift optimization override
           xcodebuild \
           -workspace "$XCODE_WORKSPACE" \
           -scheme "$XCODE_SCHEME" \
@@ -95,6 +99,7 @@ workflows:
           DEVELOPMENT_TEAM="$TEAM_ID" \
           CODE_SIGN_IDENTITY="Apple Development" \
           CODE_SIGN_STYLE="Automatic" \
+          SWIFT_OPTIMIZATION_LEVEL="-Onone" \
           -allowProvisioningUpdates \
           archive | tee xcodebuild.log
           
