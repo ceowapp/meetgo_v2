@@ -31,10 +31,22 @@ workflows:
           
       - name: Set up code signing
         script: |
-          # for this command to work
+          # Fetch signing files from App Store Connect
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
+          
+          # Get the actual profile name
+          ACTUAL_PROFILE_NAME=$(find ~/Library/MobileDevice/Provisioning\ Profiles/ -type f -name "*.mobileprovision" -exec grep -l "$BUNDLE_ID" {} \; | head -n 1 | xargs basename | sed 's/\.mobileprovision//')
+          
+          echo "Found provisioning profile: $ACTUAL_PROFILE_NAME"
+          
+          # Set the profile name as an environment variable for later use
+          echo "ACTUAL_PROFILE_NAME=$ACTUAL_PROFILE_NAME" >> $CM_ENV
+          
+          # List available provisioning profiles for debugging
+          echo "Available provisioning profiles:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
           
           # Set up code signing settings
           xcode-project use-profiles --warn-only
@@ -55,6 +67,18 @@ workflows:
           
       - name: Generate exportOptions.plist
         script: |
+          # Get the full path of the provisioning profile
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles/ -type f -name "*.mobileprovision" -exec grep -l "$BUNDLE_ID" {} \; | head -n 1)
+          
+          # Extract the UUID of the provisioning profile
+          if [ -n "$PROFILE_PATH" ]; then
+            PROFILE_UUID=$(basename "$PROFILE_PATH" | sed 's/\.mobileprovision//')
+            echo "Using profile UUID: $PROFILE_UUID"
+          else
+            echo "Warning: Could not find provisioning profile for $BUNDLE_ID"
+            PROFILE_UUID="Provisioning Profile"
+          fi
+          
           cat > ios/exportOptions.plist << EOL
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -64,24 +88,32 @@ workflows:
               <string>app-store</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_UUID</string>
+              </dict>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>uploadBitcode</key>
               <false/>
               <key>uploadSymbols</key>
               <true/>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>app.meetgo.vn</key>
-                  <string>Provisioning Profile</string>
-              </dict>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>signingStyle</key>
-              <string>manual</string>
+              <key>compileBitcode</key>
+              <false/>
+              <key>destination</key>
+              <string>upload</string>
           </dict>
           </plist>
           EOL
+          
+          # Display the generated plist for debugging
+          echo "Generated exportOptions.plist:"
+          cat ios/exportOptions.plist
           
       - name: Build iOS app
         script: |
@@ -112,12 +144,27 @@ workflows:
           # Check if archive was created
           if [ -d "build/meetgo.xcarchive" ]; then
             echo "Archive created successfully"
+            
+            # Show content of the archive
+            echo "Archive contents:"
+            ls -la build/meetgo.xcarchive/Products/Applications/
+            
+            # Export the archive
             xcodebuild \
             -exportArchive \
             -archivePath build/meetgo.xcarchive \
             -exportOptionsPlist ios/exportOptions.plist \
             -exportPath build/ios \
             -allowProvisioningUpdates
+            
+            # Check export status
+            if [ $? -eq 0 ]; then
+              echo "Export successful"
+              ls -la build/ios/
+            else
+              echo "Export failed"
+              exit 1
+            fi
           else
             echo "Archive creation failed"
             tail -n 100 xcodebuild.log
@@ -135,8 +182,3 @@ workflows:
         notify:
           success: true
           failure: true
-
-
-
-
-
