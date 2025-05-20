@@ -61,7 +61,7 @@ workflows:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>development</string>
+              <string>app-store</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
               <key>stripSwiftSymbols</key>
@@ -70,6 +70,15 @@ workflows:
               <false/>
               <key>uploadSymbols</key>
               <true/>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>app.meetgo.vn</key>
+                  <string>Provisioning Profile</string>
+              </dict>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>signingStyle</key>
+              <string>manual</string>
           </dict>
           </plist>
           EOL
@@ -126,5 +135,8 @@ workflows:
         notify:
           success: true
           failure: true
+
+
+
 
 
