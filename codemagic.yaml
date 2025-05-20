@@ -33,7 +33,7 @@ workflows:
         script: |
           # Fetch signing files from App Store Connect
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
+            --type IOS_DEVELOPMENT \
             --create
           
           # Get the actual profile name
@@ -79,14 +79,13 @@ workflows:
             PROFILE_UUID="Provisioning Profile"
           fi
           
-          # Create app-store-connect exportOptions.plist
           cat > ios/exportOptions.plist << EOL
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store-connect</string>
+              <string>development</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
               <key>provisioningProfiles</key>
@@ -95,7 +94,7 @@ workflows:
                   <string>$PROFILE_UUID</string>
               </dict>
               <key>signingCertificate</key>
-              <string>Apple Distribution</string>
+              <string>Apple Development</string>
               <key>signingStyle</key>
               <string>manual</string>
               <key>stripSwiftSymbols</key>
@@ -106,24 +105,6 @@ workflows:
               <true/>
               <key>compileBitcode</key>
               <false/>
-          </dict>
-          </plist>
-          EOL
-          
-          # Create development exportOptions.plist
-          cat > ios/exportOptions-dev.plist << EOL
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>compileBitcode</key>
-              <false/>
-              <key>stripSwiftSymbols</key>
-              <true/>
           </dict>
           </plist>
           EOL
@@ -166,8 +147,7 @@ workflows:
             echo "Archive contents:"
             ls -la build/meetgo.xcarchive/Products/Applications/
             
-            # Try main export method first
-            echo "Trying app-store-connect export method"
+            # Export the archive
             xcodebuild \
             -exportArchive \
             -archivePath build/meetgo.xcarchive \
@@ -180,23 +160,8 @@ workflows:
               echo "Export successful"
               ls -la build/ios/
             else
-              echo "App Store Connect export failed, trying development method"
-              
-              # Try development export method as fallback
-              xcodebuild \
-              -exportArchive \
-              -archivePath build/meetgo.xcarchive \
-              -exportOptionsPlist ios/exportOptions-dev.plist \
-              -exportPath build/ios \
-              -allowProvisioningUpdates
-              
-              if [ $? -eq 0 ]; then
-                echo "Development export successful"
-                ls -la build/ios/
-              else
-                echo "All export methods failed"
-                exit 1
-              fi
+              echo "Export failed"
+              exit 1
             fi
           else
             echo "Archive creation failed"
