@@ -9,7 +9,7 @@ end
 node_require('react-native/scripts/react_native_pods.rb')
 node_require('react-native-permissions/scripts/setup.rb')
 platform :ios, '15.5'
-use_modular_headers!
+prepare_react_native_project!
 # ⬇️ Uncomment the permissions you need
 setup_permissions([
   # 'AppTrackingTransparency',
