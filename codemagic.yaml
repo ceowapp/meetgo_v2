@@ -67,18 +67,6 @@ workflows:
           
       - name: Generate exportOptions.plist
         script: |
-          # Get the full path of the provisioning profile
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles/ -type f -name "*.mobileprovision" -exec grep -l "$BUNDLE_ID" {} \; | head -n 1)
-          
-          # Extract the UUID of the provisioning profile
-          if [ -n "$PROFILE_PATH" ]; then
-            PROFILE_UUID=$(basename "$PROFILE_PATH" | sed 's/\.mobileprovision//')
-            echo "Using profile UUID: $PROFILE_UUID"
-          else
-            echo "Warning: Could not find provisioning profile for $BUNDLE_ID"
-            PROFILE_UUID="Provisioning Profile"
-          fi
-          
           cat > ios/exportOptions.plist << EOL
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -91,7 +79,7 @@ workflows:
               <key>provisioningProfiles</key>
               <dict>
                   <key>$BUNDLE_ID</key>
-                  <string>$PROFILE_UUID</string>
+                  <string>provisioning_dev</string>
               </dict>
               <key>signingCertificate</key>
               <string>Apple Development</string>
