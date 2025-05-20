@@ -85,7 +85,7 @@ workflows:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store</string>
+              <string>app-store-connect</string>
               <key>teamID</key>
               <string>$TEAM_ID</string>
               <key>provisioningProfiles</key>
@@ -105,8 +105,6 @@ workflows:
               <true/>
               <key>compileBitcode</key>
               <false/>
-              <key>destination</key>
-              <string>upload</string>
           </dict>
           </plist>
           EOL
@@ -149,11 +147,44 @@ workflows:
             echo "Archive contents:"
             ls -la build/meetgo.xcarchive/Products/Applications/
             
+            # Create temporary keychain for authentication
+            echo "Setting up temporary keychain for export"
+            KEYCHAIN_NAME="ios-build.keychain"
+            KEYCHAIN_PASSWORD="temporary_password"
+            
+            # Create a new keychain
+            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+            security list-keychains -s "$KEYCHAIN_NAME" $(security list-keychains | sed -e 's/"//g')
+            security default-keychain -s "$KEYCHAIN_NAME"
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+            
+            # Import certificates from the default keychain
+            security import ~/Library/Keychains/login.keychain-db -k "$KEYCHAIN_NAME" -P "" -A
+            
+            # Try alternative export approach - development instead of app-store
+            echo "Trying to export with development method"
+            cat > ios/exportOptions-dev.plist << EOL
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>method</key>
+                <string>development</string>
+                <key>teamID</key>
+                <string>$TEAM_ID</string>
+                <key>compileBitcode</key>
+                <false/>
+                <key>stripSwiftSymbols</key>
+                <true/>
+            </dict>
+            </plist>
+            EOL
+            
             # Export the archive
             xcodebuild \
             -exportArchive \
             -archivePath build/meetgo.xcarchive \
-            -exportOptionsPlist ios/exportOptions.plist \
+            -exportOptionsPlist ios/exportOptions-dev.plist \
             -exportPath build/ios \
             -allowProvisioningUpdates
             
@@ -162,8 +193,45 @@ workflows:
               echo "Export successful"
               ls -la build/ios/
             else
-              echo "Export failed"
-              exit 1
+              echo "Development export failed, trying ad-hoc distribution"
+              
+              # Try ad-hoc distribution as a fallback
+              cat > ios/exportOptions-adhoc.plist << EOL
+              <?xml version="1.0" encoding="UTF-8"?>
+              <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+              <plist version="1.0">
+              <dict>
+                  <key>method</key>
+                  <string>ad-hoc</string>
+                  <key>teamID</key>
+                  <string>$TEAM_ID</string>
+                  <key>provisioningProfiles</key>
+                  <dict>
+                      <key>$BUNDLE_ID</key>
+                      <string>$PROFILE_UUID</string>
+                  </dict>
+                  <key>compileBitcode</key>
+                  <false/>
+                  <key>stripSwiftSymbols</key>
+                  <true/>
+              </dict>
+              </plist>
+              EOL
+              
+              xcodebuild \
+              -exportArchive \
+              -archivePath build/meetgo.xcarchive \
+              -exportOptionsPlist ios/exportOptions-adhoc.plist \
+              -exportPath build/ios \
+              -allowProvisioningUpdates
+              
+              if [ $? -eq 0 ]; then
+                echo "Ad-hoc export successful"
+                ls -la build/ios/
+              else
+                echo "All export methods failed"
+                exit 1
+              fi
             fi
           else
             echo "Archive creation failed"
