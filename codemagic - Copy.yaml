@@ -1,0 +1,354 @@
+workflows:
+  ios-testflight:
+    name: iOS TestFlight Distribution
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    integrations:
+      app_store_connect: Key Test
+    environment:
+      groups:
+        - development
+      vars:
+        XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
+        XCODE_SCHEME: "meetgo"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.5"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "BD46Y2FML8"
+        APP_STORE_CONNECT_ISSUER_ID: "c76b0f32-e565-4479-90c9-edc2487340a7"
+        BUNDLE_ID: "app.meetgo.vn"
+        TEAM_ID: "M73GARWH95"
+        APP_VERSION: "1.0"
+        APP_BUILD_NUMBER: 1 # You can use $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_CONNECT_ISSUER_ID" "$APP_STORE_CONNECT_KEY_IDENTIFIER" "$APP_STORE_CONNECT_KEY_CONTENT" "$BUNDLE_ID") + 1))
+      xcode: 16.2
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        provisioning_profiles:
+          - AppStore Provisioning Profile
+        certificates:
+          - Apple Distribution Certificate
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install && npx patch-package
+          cd ios && pod install && cd ..
+          
+      - name: Set up code signing
+        script: |
+          # Fetch signing files from App Store Connect
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          
+          # Set up code signing settings
+          xcode-project use-profiles --warn-only
+          
+      - name: Update Pod targets and Swift optimization
+        script: |
+          cd ios
+          # Update deployment targets to 15.5 
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          
+          # Update build version and number
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "meetgo/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_BUILD_NUMBER" "meetgo/Info.plist"
+          cd ..
+          
+      - name: Build iOS app for TestFlight
+        script: |
+          mkdir -p build
+          set -x
+          
+          # Clean build
+          xcodebuild clean \
+          -workspace "$XCODE_WORKSPACE" \
+          -scheme "$XCODE_SCHEME" \
+          -configuration Release
+          
+          # Build archive
+          xcodebuild \
+          -workspace "$XCODE_WORKSPACE" \
+          -scheme "$XCODE_SCHEME" \
+          -configuration Release \
+          -sdk iphoneos \
+          -archivePath build/meetgo.xcarchive \
+          IPHONEOS_DEPLOYMENT_TARGET=15.5 \
+          DEVELOPMENT_TEAM="$TEAM_ID" \
+          -allowProvisioningUpdates \
+          archive | tee xcodebuild.log
+          
+          # Export the archive for App Store distribution
+          cat > ios/exportOptions.plist << EOL
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          EOL
+          
+          xcodebuild \
+          -exportArchive \
+          -archivePath build/meetgo.xcarchive \
+          -exportOptionsPlist ios/exportOptions.plist \
+          -exportPath build/ios \
+          -allowProvisioningUpdates
+          
+      - name: Upload to TestFlight
+        script: |
+          # Upload to TestFlight
+          xcrun altool --upload-app \
+          --type ios \
+          --file "build/ios/meetgo.ipa" \
+          --apiKey "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+          --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+          
+          # Alternative upload method using App Store Connect API
+          # app-store-connect publish \
+          #   --api-key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+          #   --api-key-issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+          #   --api-key-content "$APP_STORE_CONNECT_KEY_CONTENT" \
+          #   --ipa "build/ios/meetgo.ipa"
+          
+    artifacts:
+      - build/ios/*.ipa
+      - xcodebuild.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Public Testers
+          - Internal Team
+
+  android-playstore-beta:
+    name: Android Play Store Beta
+    instance_type: linux_x2
+    max_build_duration: 120
+    environment:
+      groups:
+        - development
+      vars:
+        PACKAGE_NAME: "app.meetgo.vn"
+        VERSION_NAME: "1.0.0"
+        # You can dynamically increment this using Google Play API
+        VERSION_CODE: 1 # $(($LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
+      node: 16
+      java: 11
+      android_signing:
+        - keystore_reference
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install && npx patch-package
+      
+      - name: Set Android version codes
+        script: |
+          # Update version name and code in build.gradle
+          cd android
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION_NAME\"/" app/build.gradle
+          cd ..
+      
+      - name: Build Android release
+        script: |
+          # Build release AAB
+          cd android
+          ./gradlew bundleRelease
+          
+          # Also build APK for testing
+          ./gradlew assembleRelease
+      
+      - name: Generate release notes
+        script: |
+          mkdir -p build/release_notes
+          echo "New beta build for testing." > build/release_notes/whatsnew-en-US
+          
+      - name: Publish to Play Store Beta
+        script: |
+          # Use Google Play API to upload
+          google-play upload \
+            --package-name "$PACKAGE_NAME" \
+            --aab "android/app/build/outputs/bundle/release/app-release.aab" \
+            --track beta \
+            --release-notes build/release_notes/whatsnew-en-US=en-US
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: beta
+        submit_as_draft: false
+        
+  # Development builds for testing
+  ios-development:
+    name: iOS Development Build
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    integrations:
+      app_store_connect: Key Test
+    environment:
+      groups:
+        - development
+      vars:
+        XCODE_WORKSPACE: "ios/meetgo.xcworkspace"
+        XCODE_SCHEME: "meetgo"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.5"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "BD46Y2FML8"
+        APP_STORE_CONNECT_ISSUER_ID: "c76b0f32-e565-4479-90c9-edc2487340a7"
+        BUNDLE_ID: "app.meetgo.vn"
+        TEAM_ID: "M73GARWH95"
+      xcode: 16.2
+      cocoapods: default
+      ios_signing:
+        provisioning_profiles:
+          - Development Provisioning Profile
+        certificates:
+          - iOS Development Certificate
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install && npx patch-package
+          cd ios && pod install && cd ..
+          
+      - name: Set up code signing
+        script: |
+          # Fetch signing files from App Store Connect
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_DEVELOPMENT \
+            --create
+          
+          # Set up code signing settings
+          xcode-project use-profiles --warn-only
+          
+      - name: Update Pod targets and Swift optimization
+        script: |
+          cd ios
+          # Update deployment targets to 15.5 
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9]*\.[0-9]*/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' Pods/Target\ Support\ Files/*/*.xcconfig || true
+          
+          # Fix Swift optimization level for debugging
+          find Pods/Target\ Support\ Files -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -Owholemodule;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
+          find Pods/Target\ Support\ Files -name "*.xcconfig" -exec sed -i '' 's/SWIFT_OPTIMIZATION_LEVEL = -O;/SWIFT_OPTIMIZATION_LEVEL = -Onone;/g' {} \;
+          cd ..
+          
+      - name: Build iOS development app
+        script: |
+          mkdir -p build
+          
+          # Generate exportOptions.plist
+          cat > ios/exportOptions.plist << EOL
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          EOL
+          
+          # Build archive
+          xcodebuild \
+          -workspace "$XCODE_WORKSPACE" \
+          -scheme "$XCODE_SCHEME" \
+          -configuration Debug \
+          -sdk iphoneos \
+          -archivePath build/meetgo.xcarchive \
+          IPHONEOS_DEPLOYMENT_TARGET=15.5 \
+          DEVELOPMENT_TEAM="$TEAM_ID" \
+          SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+          -allowProvisioningUpdates \
+          archive | tee xcodebuild.log
+          
+          # Export the archive
+          xcodebuild \
+          -exportArchive \
+          -archivePath build/meetgo.xcarchive \
+          -exportOptionsPlist ios/exportOptions.plist \
+          -exportPath build/ios \
+          -allowProvisioningUpdates
+          
+    artifacts:
+      - build/ios/*.ipa
+      - xcodebuild.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true
+
+  android-development:
+    name: Android Development Build
+    instance_type: linux_x2
+    max_build_duration: 120
+    environment:
+      groups:
+        - development
+      vars:
+        PACKAGE_NAME: "app.meetgo.vn"
+      node: 16
+      java: 11
+      android_signing:
+        - keystore_reference
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install && npx patch-package
+      
+      - name: Build Android debug
+        script: |
+          cd android
+          ./gradlew assembleDebug
+          
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com
+        notify:
+          success: true
+          failure: true
