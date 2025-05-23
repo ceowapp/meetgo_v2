@@ -16,7 +16,7 @@ import { IReqRegister } from '../redux/types';
 import Config from 'react-native-config';
 import Platform from 'utils/Platform';
 import { IResponseType, IStatus } from 'constant/commonType';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from "jwt-decode"
 import config from 'react-native-config';
 import DeepLink from 'services/deeplink';
 import { useTranslation } from 'react-i18next';
@@ -248,3 +248,5 @@ const useAuth = () => {
 };
 
 export default useAuth;
+
+

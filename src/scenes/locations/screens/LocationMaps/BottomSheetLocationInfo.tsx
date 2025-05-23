@@ -36,7 +36,7 @@ type IPropsLocationInfo = {
 };
 enum EBottomValue {
   CLOSE = -1,
-  OPEN = 1,
+  OPEN = 0,
 }
 
 const BottomSheetLocationInfo: FC<IPropsLocationInfo> = ({
