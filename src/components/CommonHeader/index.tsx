@@ -6,10 +6,6 @@ import {
   TextStyle,
   TouchableOpacity,
 } from 'react-native';
-/**
- * Utils and constant
- */
-
 import styles from './styles';
 import {goBack} from 'navigation/RootNavigation';
 import Screen, {resWidth} from 'utils/Screen';
@@ -38,7 +34,6 @@ function renderLeftDefault(
 ) {
   const onPressBack = () => {
     if (onPressBtnDefaultLeft) return onPressBtnDefaultLeft();
-    console.log("this is fired")
     return goBack();
   };
 
