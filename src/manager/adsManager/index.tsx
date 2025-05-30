@@ -56,7 +56,7 @@ class AdsManager {
       return false;
     } catch (error) {
       console.warn('AdsManager - Error determining test mode, defaulting to false:', error);
-      return false;
+      return isDev || isTestConfig;
     }
   }
 
@@ -181,30 +181,23 @@ class AdsManager {
     try {
       console.log(`AdsManager - Starting initialization for platform: ${this.currentPlatform}...`);
       console.log(`AdsManager - Test mode: ${this.testMode}`);
-      
       const configValidation = this.validateConfiguration();
       if (!configValidation.isValid) {
         throw new Error(`Configuration validation failed: ${configValidation.errors.join(', ')}`);
       }
-      
       //const permissionResult = await this.checkTrackingPermission();
       //console.log('AdsManager - Permission check result:', permissionResult);
-      
       const adapterStatuses = await mobileAds().initialize();
       console.log('AdsManager - Mobile ads initialized, adapter statuses:', adapterStatuses);
-      
       const requestConfig = {
         maxAdContentRating: MaxAdContentRating.PG,
         tagForChildDirectedTreatment: false,
         tagForUnderAgeOfConsent: false,
       };
-      
       await mobileAds().setRequestConfiguration(requestConfig);
       console.log('AdsManager - Request configuration set');
-      
       this.initialized = true;
       this.initializationPromise = null;
-      
       const result = {
         success: true,
         adapterStatuses,
@@ -213,7 +206,6 @@ class AdsManager {
         platform: this.currentPlatform,
         timestamp: new Date().toISOString(),
       };
-      
       console.log('AdsManager - Initialization completed successfully:', result);
       return result;
     } catch (error) {
@@ -226,29 +218,24 @@ class AdsManager {
         platform: this.currentPlatform,
         timestamp: new Date().toISOString(),
       };
-
       throw errorResult;
     }
   }
 
   handleAdLoadError(error, adType) {
     console.log(`AdsManager - ${adType} ad load error:`, error);
-    
     if (error.code === 'googleMobileAds/error-code-no-fill') {
       console.log(`AdsManager - No fill for ${adType} ad. This is normal and not an error.`);
       return { isNoFill: true, shouldRetry: false };
     }
-    
     if (error.code === 'googleMobileAds/error-code-network-error') {
       console.log(`AdsManager - Network error for ${adType} ad. Should retry later.`);
       return { isNoFill: false, shouldRetry: true };
     }
-    
     if (error.code === 'googleMobileAds/error-code-invalid-request') {
       console.error(`AdsManager - Invalid request for ${adType} ad. Check configuration.`);
       return { isNoFill: false, shouldRetry: false };
     }
-    
     console.warn(`AdsManager - Unknown error for ${adType} ad:`, error.code);
     return { isNoFill: false, shouldRetry: true };
   }

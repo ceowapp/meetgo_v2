@@ -189,21 +189,15 @@ export default class DeepLink {
   static handleFirstLaunchAttribution(data) {
     try {
       const { af_status, media_source, campaign, af_referrer_customer_id } = data;
-
       if (af_status === DeepLink.ATTRIBUTION_STATUS.NON_ORGANIC) {
         const referralCode = DeepLink.extractReferralCodeFromData(data, 'af_refcode');
-
-        // Store referral code if it's a non-organic install with a referrer customer ID
         if (af_referrer_customer_id && referralCode) {
           console.log('DeepLink: Non-organic install with referral code:', referralCode);
           DeepLink.storeReferralCode(referralCode);
         }
-
         const mediaSourceStr = typeof media_source === 'string' ? media_source : 'Unknown';
         const campaignStr = typeof campaign === 'string' ? campaign : 'Unknown';
-
         console.log(`DeepLink: First launch - Non-Organic install. Media source: ${mediaSourceStr}, Campaign: ${campaignStr}`);
-
       } else if (af_status === DeepLink.ATTRIBUTION_STATUS.ORGANIC) {
         console.log('DeepLink: First launch - Organic Install.');
       } else {
