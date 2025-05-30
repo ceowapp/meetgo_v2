@@ -13,7 +13,6 @@ const hasNotch = DeviceInfo.hasNotch();
 const appVersion = DeviceInfo.getVersion();
 const isSupportTranslucentBar = (isIos && !hasNotch) || androidVersion >= 21;
 const appBuildNumber = DeviceInfo.getBuildNumber();
-
 const isDev = __DEV__;
 const isBuildProduction = !__DEV__ && Config.IS_TEST_MODE === 'false';
 const isBuildTest = !__DEV__ && Config.IS_TEST_MODE === 'true';

@@ -87,6 +87,7 @@ const useAccount = () => {
         callbackSuccess && callbackSuccess();
       }
     } catch (error) {
+      console.log("this is error", error)
       const errorMess = error as IResponseType<IStatus>;
       addToast({
         message:

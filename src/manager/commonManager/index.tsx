@@ -1,6 +1,6 @@
 import appConstant from 'constant/appConstant';
 import SetupAxios from 'manager/axiosManager';
-import React, {useState, FC, useLayoutEffect} from 'react';
+import React, {useState, FC, useLayoutEffect, useEffect} from 'react';
 import {Alert, View} from 'react-native';
 import {Button, Text, TextInput} from 'react-native-paper';
 import SplashScreen from 'react-native-splash-screen';
@@ -9,6 +9,7 @@ import {IAuthToken} from 'scenes/auth/redux/types';
 import {settingsActions, SettingsSelector} from 'services/settings/slice';
 import {useAppDispatch, useAppSelector} from 'storeConfig/hook';
 import {COLORS} from 'utils/styleGuide';
+import Platform from 'utils/Platform';
 
 const CommonManager: FC<{children: any}> = ({children}) => {
   const url = useAppSelector(SettingsSelector.getUrl);
@@ -17,31 +18,56 @@ const CommonManager: FC<{children: any}> = ({children}) => {
     'develop',
   );
   const token = useAppSelector(AuthSelector.getToken);
-  const showSeverBoard = !url;
+  const showSeverBoard = !url && (Platform.isDev || Platform.isBuildTest);
   const dispatch = useAppDispatch();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const updateToken = (dataToken: IAuthToken) => {
     dispatch(AuthActions.updateCoupleToken(dataToken));
   };
+  
   const reLogin = () => {
     Alert.alert('Phiên đăng nhập hết hạn');
     dispatch(AuthActions.logoutApp());
   };
 
-  useLayoutEffect(() => {
-    SplashScreen.hide();
-    SetupAxios.init();
-    SetupAxios.setupOnResponseInterceptors(updateToken, reLogin);
-    if (token !== '') {
-      SetupAxios.setHeaderToken(token);
-    }
-  }, [token]);
-  useLayoutEffect(() => {
-    const newUrl = SetupAxios.setBaseUrl(url);
-    if (newUrl !== url) {
-      dispatch(settingsActions.setUrl(newUrl));
+  useEffect(() => {
+    if (url) {
+      setSeverPath(url);
     }
   }, [url]);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        SetupAxios.init();
+        SetupAxios.setupOnResponseInterceptors(updateToken, reLogin);
+        if (token !== '') {
+          SetupAxios.setHeaderToken(token);
+        }
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        Alert.alert('Error', 'Failed to initialize app. Please try again.');
+      }
+    };
+
+    initializeApp();
+  }, [token]);
+
+  useLayoutEffect(() => {
+    if (isInitialized && url) {
+      try {
+        const newUrl = SetupAxios.setBaseUrl(url);
+        if (newUrl !== url) {
+          dispatch(settingsActions.setUrl(newUrl));
+        }
+        SplashScreen.hide();
+      } catch (error) {
+        console.error('Error setting up base URL:', error);
+      }
+    }
+  }, [url, isInitialized]);
 
   const confirmSever = () => {
     if (!severPath) {
@@ -59,7 +85,6 @@ const CommonManager: FC<{children: any}> = ({children}) => {
           alignContent: 'center',
           backgroundColor: COLORS.grey5,
           justifyContent: 'center',
-          // paddingHorizontal: 20,
         }}>
         <View
           style={{
@@ -68,7 +93,6 @@ const CommonManager: FC<{children: any}> = ({children}) => {
             backgroundColor: COLORS.greenSuccess,
             width: '100%',
             alignItems: 'center',
-            // height: '20%',
             justifyContent: 'space-between',
           }}>
           {mode !== 'custom' && <Text>URL: {severPath}</Text>}
@@ -86,7 +110,6 @@ const CommonManager: FC<{children: any}> = ({children}) => {
               flexDirection: 'row',
               justifyContent: 'space-between',
               paddingVertical: 12,
-              // width: '100%',
             }}>
             <Button
               mode="contained-tonal"
@@ -119,6 +142,8 @@ const CommonManager: FC<{children: any}> = ({children}) => {
       </View>
     );
   };
+
   return showSeverBoard ? renderSelectSever() : children;
 };
+
 export default CommonManager;

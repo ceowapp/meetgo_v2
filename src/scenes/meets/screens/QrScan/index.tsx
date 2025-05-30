@@ -23,6 +23,7 @@ import {ProgressiveImage} from 'components/Image/ProgressiveImage';
 import LinearGradient from 'react-native-linear-gradient';
 import {ButtonPrimary} from 'components/Button/Primary';
 import { useTranslation } from 'react-i18next';
+import {BOTTOM_TAB_HEIGHT} from 'utils/sizes';
 import BannerAdsComponent from 'components/Ads/BannerAds';
 import InterstitialAdsService from 'components/Ads/InterstitialAds';
 import { useIsForeground } from 'scenes/meets/helper/useIsForeground';
@@ -48,10 +49,8 @@ const QrScan = () => {
   const adShownRef = useRef(false);
   const adLoadedRef = useRef(false);
 
-  // Updated camera permissions hook
   const { hasPermission, requestPermission } = useCameraPermission();
   
-  // Updated camera device hook
   const device = useCameraDevice('back');
   
   const currentLocation = useAppSelector(locationSelector.getCurentLocation);
@@ -64,11 +63,10 @@ const QrScan = () => {
   const isForeground = useIsForeground();
   const isActive = isFocused && isForeground;
 
-  // Using the built-in code scanner from react-native-vision-camera
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
-    scanMode: 'continuous', // Ensure continuous scanning
-    regionOfInterest: viewFinderBounds, // Focus scanning on the barcode mask area
+    scanMode: 'continuous', 
+    regionOfInterest: viewFinderBounds,
     onCodeScanned: (codes) => {
       if (codes.length > 0 && codes[0].value) {
         try {
@@ -102,7 +100,6 @@ const QrScan = () => {
       }
     }
   });
-
   useEffect(() => {
     if (currentLocation?.latitude && currentLocation.longitude) {
       getListLocationMeetNearByMe(currentLocation);
@@ -118,17 +115,13 @@ const QrScan = () => {
 
   const onOpenSettings = () => Linking.openSettings();
 
-  // Initialize ad when component mounts
   useEffect(() => {
-    // Pre-load the ad when component mounts for faster display later
     if (!adLoadedRef.current) {
       InterstitialAdsService.load().onLoad(() => {
         console.log('Interstitial ad loaded and ready');
         adLoadedRef.current = true;
       });
     }
-    
-    // Clean up ads when component unmounts
     return () => {
       adShownRef.current = false;
       adLoadedRef.current = false;
@@ -137,31 +130,22 @@ const QrScan = () => {
     };
   }, []);
 
-  // Handle showing the ad when appropriate
   useEffect(() => {
-    // Only attempt to show ad if we're active, haven't shown one yet, and ad is loaded
     if (isActive && !adShownRef.current && !isAdLoading && adLoadedRef.current) {
       setIsAdLoading(true);
-      
       setTimeout(() => {
         if (InterstitialAdsService.show()) {
           console.log('Interstitial ad displayed');
           adShownRef.current = true;
           setAdShown(true);
-          
-          // Set up callback for when ad is closed
           InterstitialAdsService.onClose(() => {
             console.log('Interstitial ad closed');
             setIsAdLoading(false);
-            
-            // Pre-load the next ad after this one closes
             InterstitialAdsService.load();
           });
         } else {
           console.log('Interstitial not ready to display yet');
           setIsAdLoading(false);
-          
-          // Try to load the ad if showing failed
           if (!adLoadedRef.current) {
             InterstitialAdsService.load().onLoad(() => {
               adLoadedRef.current = true;
@@ -313,9 +297,12 @@ const styles = StyleSheet.create({
   },
   bannerAd: {
     position: 'absolute',
-    bottom: 0,
+    bottom: BOTTOM_TAB_HEIGHT,
     width: '100%',
+    minHeight: 60
   }
 });
 
 export default QrScan;
+
+

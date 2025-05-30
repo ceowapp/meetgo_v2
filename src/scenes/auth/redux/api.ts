@@ -24,8 +24,9 @@ const registerUser = (
   axios.post(API_GLOBAL.AUTH.REGISTER, data);
 const updateFirstSignUp = (
   data: IFormOnboarding,
-): Promise<IResponseType<IResRegister>> =>
-  axios.put(API_GLOBAL.AUTH.UPDATE_INFO_FIRST, data);
+): Promise<IResponseType<IResRegister>> => {
+  return axios.put(API_GLOBAL.AUTH.UPDATE_INFO_FIRST, data);
+};
 
 const authApi = {
   refreshToken,

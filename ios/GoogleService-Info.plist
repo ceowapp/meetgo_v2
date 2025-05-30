@@ -34,5 +34,7 @@
 	<string>1:942316394462:ios:f04ae48b6749690cb4af4f</string>
 	<key>DATABASE_URL</key>
 	<string>https://meetgo-product-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+	<key>ADMOB_APP_ID</key>
+	<string>ca-app-pub-2528097532612137~5127960716</string>
 </dict>
 </plist>

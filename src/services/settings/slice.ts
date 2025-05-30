@@ -4,16 +4,16 @@ import {persistReducer} from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootState} from 'storeConfig/rootStore';
 import {RESET_ALL_STATE} from 'storeConfig/types';
+import appConstant from 'constant/appConstant';
 
 type ISettings = {
   url: string;
 };
 
 const initialState: ISettings = {
-  url: '',
+  url: appConstant.API_URL.PRODUCTION,
 };
 
-// Slice
 const settingsSlice = createSlice({
   name: 'service:settings',
   initialState,
@@ -29,18 +29,16 @@ const settingsSlice = createSlice({
   },
 });
 
-// Selectors
 const getUrl = (state: RootState) => state.services.settings.url;
 export const SettingsSelector = {
   getUrl,
 };
 
-// Actions
 export const settingsActions = settingsSlice.actions;
 
-// Reducers
 const persistConfig: PersistConfig<typeof initialState> = {
   key: 'service:settings',
   storage: AsyncStorage,
 };
+
 export default persistReducer(persistConfig, settingsSlice.reducer);

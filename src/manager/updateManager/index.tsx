@@ -4,6 +4,7 @@ import CodePush, {
   DownloadProgress,
   RemotePackage,
 } from 'react-native-code-push';
+
 /** utils */
 import {usePrevious} from 'utils/Utility';
 import {perWidth, resFont, resWidth} from 'utils/Screen';
@@ -16,7 +17,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import LoadingScreen from 'components/LoadingScreen';
-
 import Svg, {Line} from 'react-native-svg';
 import {COLORS, SPACING} from 'utils/styleGuide';
 import { useTranslation } from 'react-i18next';
@@ -39,9 +39,7 @@ interface InitState {
 }
 
 const STROKE_COLOR = COLORS.green;
-
 const {width} = Dimensions.get('window');
-
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 const styles = StyleSheet.create({
@@ -100,13 +98,11 @@ const UpdateManager: React.FC = () => {
       const update = await CodePush.checkForUpdate();
       remotePackage.current = update;
       console.log('checkCodePush', update);
-      
       if (!update) {
         console.log('------- CodePush have no Update -------');
         setState(prev => ({...prev, updateMode: UpdateMode.NONE}));
         return;
       }
-
       console.log('------- CodePush have a Update -------');
       const {isMandatory} = update;
       if (isMandatory) {
@@ -125,27 +121,12 @@ const UpdateManager: React.FC = () => {
         CodePush.allowRestart();
       }
     } catch (error) {
-      let errorCp = error as Error;
-      const messageError = errorCp.message as string;
-      try {
-        if (messageError && messageError.length > 4) {
-          const removeStr = messageError.slice(4, messageError.length);
-          const parseData = JSON.parse(removeStr) as {
-            statusCode: number;
-            message: string;
-          };
-          if (parseData.statusCode === 429) {
-            setState(prev => ({
-              ...prev,
-              updateMode: UpdateMode.RATE_LIMIT,
-              statusProcess: t('update.error_rate_limit'),
-            }));
-          }
-        }
-      } catch (parseError) {
-        console.warn('Error parsing CodePush error:', parseError);
-      }
       console.warn('CodePush.checkForUpdateError', error);
+      setState(prev => ({
+        ...prev,
+        updateMode: UpdateMode.NONE,
+        statusProcess: t('update.status_process_default'),
+      }));
     }
   };
 
@@ -196,7 +177,6 @@ const UpdateManager: React.FC = () => {
     console.log('------- CodePush codePushDownloadDidProgress -------');
     const {receivedBytes, totalBytes} = progressDownload;
     const temp = receivedBytes / totalBytes;
-    
     if (temp >= 1) {
       progress.value = withTiming(1, {
         duration: 300,
@@ -232,12 +212,10 @@ const UpdateManager: React.FC = () => {
   
   useEffect(() => {
     checkCodePush();
-    
     const subscription = AppState.addEventListener(
       'change',
       handleAppStateChange,
     );
-
     return () => {
       subscription.remove();
     };
@@ -256,11 +234,9 @@ const UpdateManager: React.FC = () => {
   const handleCodePushManually = useCallback(async () => {
     try {
       if (!remotePackage.current) return;
-      
       const localPackage = await remotePackage.current.download(
         codePushDownloadDidProgress,
       );
-      
       if (localPackage) {
         await localPackage.install(CodePush.InstallMode.IMMEDIATE);
       }
@@ -301,26 +277,12 @@ const UpdateManager: React.FC = () => {
       );
       CodePush.allowRestart();
     } catch (error) {
-      try {
-        let errorCp = error as Error;
-        const messageError = errorCp.message as string;
-        if (messageError && messageError.length > 4) {
-          const removeStr = messageError.slice(4, messageError.length);
-          const parseData = JSON.parse(removeStr) as {
-            statusCode: number;
-            message: string;
-          };
-          if (parseData?.statusCode === 429) {
-            setState(prev => ({
-              ...prev,
-              updateMode: UpdateMode.RATE_LIMIT,
-              statusProcess: t('update.error_rate_limit'),
-            }));
-          }
-        }
-      } catch (errorParse) {
-        console.error(errorParse);
-      }
+      console.error('CodePush sync error:', error);
+      setState(prev => ({
+        ...prev,
+        updateMode: UpdateMode.NONE,
+        statusProcess: t('update.status_process_default'),
+      }));
     }
   }, [t]);
 

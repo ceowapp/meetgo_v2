@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { enableScreens } from 'react-native-screens';
 import {
   adaptNavigationTheme,
@@ -17,7 +17,6 @@ import {
 } from 'react-native-safe-area-context';
 import { ToastContextProvider } from 'components/Toast/ContextProvider';
 import NetworkInfoHandler from 'services/networkInfo';
-import colors from 'services/themes/colors';
 import RootNavigation from 'navigation';
 import CommonManager from 'manager/commonManager';
 import ConfigBoard from 'manager/commonManager/ConfigBoard';
@@ -27,11 +26,11 @@ import AppStateHanlder from 'services/appstate';
 import GlobalModal from 'services/globalModal';
 import MyLocation from 'services/location/MyLocation';
 import ForceUpdateApp from 'services/forceUpdate';
-import UpdateManager from 'manager/updateManager';
 import AdsManager from 'manager/adsManager';
 import { I18nextProvider } from 'react-i18next';
 import DeepLink from 'services/deeplink';
 import i18n from 'i18n';
+import LoadingScreen from 'components/LoadingScreen';
 
 enableScreens();
 const theme = {
@@ -39,9 +38,9 @@ const theme = {
 };
 const { LightTheme } = adaptNavigationTheme({ reactNavigationLight: DefaultTheme });
 
-const isRelease = !__DEV__;
-
 export default function App() {
+  const [isServicesInitialized, setIsServicesInitialized] = useState(false);
+
   useEffect(() => {
     initializeServices();
     return () => {
@@ -51,12 +50,18 @@ export default function App() {
 
   const initializeServices = async () => {
     try {
-      DeepLink.init();
+      await DeepLink.init();
       await AdsManager.initialize();
+      setIsServicesInitialized(true);
     } catch (error) {
       console.error('Error initializing services:', error);
+      setIsServicesInitialized(true);
     }
   };
+
+  if (!isServicesInitialized) {
+    return <LoadingScreen />;
+  }
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -75,7 +80,6 @@ export default function App() {
                     <MyLocation />
                   </ToastContextProvider>
                   <ForceUpdateApp />
-                  <UpdateManager />
                 </CommonManager>
               </SafeAreaProvider>
             </NavigationContainer>

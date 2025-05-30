@@ -33,10 +33,6 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CodePushDeploymentKey</key>
-	<string>$(DEPLOYMENT_KEY_IOS)</string>
-        <key>CodePushServerURL</key>
-        <string>$(CODE_PUSH_SERVER_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -46,6 +42,10 @@
            <key>NSAllowsLocalNetworking</key>
 	   <true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to enable voice recording features in meetings and audio messages.</string>
+  	<key>NSAppleMusicUsageDescription</key>
+  	<string>MeetGo uses your music library access to enhance media playback features and provide a personalized experience.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) muốn truy cập vào Camera của bạn, để có thể quét QR của những người gần bạn.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

@@ -51,11 +51,10 @@ const setBaseUrl = (baseUrl: string): string => {
   let newBaseUrl = '';
   if (Platform.isBuildProduction) {
     newBaseUrl = CONSTANTS.API_URL.PRODUCTION;
-  } else if (baseUrl) {
-    newBaseUrl = baseUrl;
+  } else if (Platform.isDev || Platform.isBuildTest) {
+    newBaseUrl = baseUrl || CONSTANTS.API_URL.DEVELOP;
   }
   axios.defaults.baseURL = newBaseUrl;
-
   return newBaseUrl;
 };
 

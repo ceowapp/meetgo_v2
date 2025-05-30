@@ -2,10 +2,10 @@
   "name": "meetgo",
   "displayName": "meetgo",
   "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-7835770601323253~7373679244",
-    "androidAppId": "ca-app-pub-7835770601323253~7373679244",
-    "iosAppId": "ca-app-pub-7835770601323253~2437605811",
-    "ios_app_id": "ca-app-pub-7835770601323253~2437605811",
+    "android_app_id": "ca-app-pub-2528097532612137~7479686104",
+    "androidAppId": "ca-app-pub-2528097532612137~7479686104",
+    "iosAppId": "ca-app-pub-2528097532612137~5127960716",
+    "ios_app_id": "ca-app-pub-2528097532612137~5127960716",
     "user_tracking_usage_description": "This identifier will be used to deliver personalized ads to you.",
     "sk_ad_network_items": [
       "cstr6suwn9.skadnetwork",

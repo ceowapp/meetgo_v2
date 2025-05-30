@@ -158,13 +158,13 @@ const BtnStartEarn: FC<EarnProps> = ({
   };
   const titleEarn =
     dataEarn && dataEarn.countdownTime
-      ? t('earn.done')
-      : t('earn.start');
+      ? t('earn.finishButton')
+      : t('earn.startButton');
   const warningEarn =
     dataEarn && dataEarn.countdownTime
-      ? t('earn.warning')
+      ? t('earn.finishWarning')
       : '';
-  const congratSuccess = t('earn.success');
+  const congratSuccess = t('earn.successMessage');
   const onActionEarn = !finish ? onStart : onDone;
   return (
     <>

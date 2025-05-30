@@ -111,6 +111,7 @@ const style = StyleSheet.create({
     backgroundColor: COLORS.grey3,
   },
 });
+
 const OnboardingScreen = () => {
   const { t } = useTranslation();
   const [isPending, startTransition] = useTransition();

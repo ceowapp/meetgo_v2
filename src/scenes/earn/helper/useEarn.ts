@@ -46,10 +46,7 @@ const useEarn = (propsEarn?: IDataEarn) => {
       }
     } catch (error) {
       setErrorMessage(
-        t('earn.locationError', {
-          warning: t('earn.warningTitle'),
-          moveTip: t('earn.moveTip'),
-        })
+        error?.status?.message || t('earn.locationError')
       );
       const errorMess = error as IResponseType<IStatus>;
       addToast({
@@ -73,10 +70,7 @@ const useEarn = (propsEarn?: IDataEarn) => {
         setErrorMessage('');
       } else {
         setErrorMessage(
-          t('earn.locationError', {
-            warning: t('earn.warningTitle'),
-            moveTip: t('earn.moveTip'),
-          })
+          t('earn.locationWarning')
         );
       }
     } catch (error) {

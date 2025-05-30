@@ -31,6 +31,8 @@ GoogleSignin.configure();
 
 const widthContainerDot = perWidth(100);
 const Intro = (): ReactElement => {
+    console.log("this is rendered autth")
+
   const { t } = useTranslation();
   const index = useSharedValue(0);
   const {onSignInApple, onSignInGoogle, onSiginAndroidApple, loading} =

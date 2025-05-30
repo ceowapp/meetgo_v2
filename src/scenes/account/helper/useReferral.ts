@@ -1,126 +1,277 @@
-import { useState, useCallback } from 'react';
-import { Share } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { Share, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import appsFlyer from 'react-native-appsflyer';
 import config from 'react-native-config';
-import { useAppSelector, useAppDispatch } from 'storeConfig/hook';
+import { useAppSelector } from 'storeConfig/hook';
 import { AccountSelector } from 'scenes/account/redux/slice';
 import { AuthSelector } from 'scenes/auth/redux/slice';
-import { isValidResponse } from 'utils/Utility';
+import { REFERRAL_CONSTANTS } from 'constant/dataConstant';
 import useToast from 'components/Toast/useToast';
 import API_GLOBAL from 'constant/apiConstant';
 
 export const useReferral = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const dispatch = useAppDispatch();
+  const [isSharing, setIsSharing] = useState(false);
   const token = useAppSelector(AuthSelector.getToken);
   const referralCode = useAppSelector(AccountSelector.getRefCode);
   const idAuth = useAppSelector(AccountSelector.getIdAuth);
   const { addToast } = useToast();
-  
-  const generateReferralLink = useCallback(() => {
-    const baseUrl = config.APP_DOWNLOAD_URL || 'https://yourapp.com/download';
-    return `${baseUrl}?ref=${referralCode}`;
-  }, [referralCode]);
-  
-  const shareReferralLink = useCallback(async () => {
-    try {
-      appsFlyer.setAppInviteOneLinkID('UrXm', null);
-      appsFlyer.generateInviteLink(
-        {
-          channel: 'app_share',
-          campaign: 'referral_program',
-          customerID: idAuth,
-          userParams: {
-            af_refcode: referralCode
-          }
-        },
-        (link) => {
-          Share.share({
-            message: `${link}`,
-            url: link, 
-          })
-            .then(() => console.log("Share successful"))
-            .catch(err => console.error("Share failed:", err));
-        },
-        (err) => console.error("Error generating link:", err)
-      );
-    } catch (error) {
-      console.error('Error sharing referral link:', error);
-      addToast({
-        message: t('account.referralShareFailed'),
-        position: 'top',
-        type: 'ERROR_V3',
-      });
-    }
-  }, [idAuth, referralCode, t, addToast]);
 
+  const isValidReferralCode = useMemo(() => {
+    return referralCode && typeof referralCode === 'string' && referralCode.trim().length > 0;
+  }, [referralCode]);
+
+  const isValidAuth = useMemo(() => {
+    return token && idAuth && typeof token === 'string' && typeof idAuth === 'string';
+  }, [token, idAuth]);
+
+  const baseAppUrl = useMemo(() => {
+    const url = config.APP_DOWNLOAD_URL;
+    if (!url || typeof url !== 'string' || url.trim().length === 0) {
+      console.warn('useReferral - APP_DOWNLOAD_URL not configured, using fallback');
+      return 'https://yourapp.com/download';
+    }
+    return url.trim();
+  }, []);
+
+  const handleError = useCallback((error, defaultMessage, context = '') => {
+    console.error(`useReferral Error${context ? ` - ${context}` : ''}:`, error);
+    let errorMessage = defaultMessage;
+    if (error?.message) {
+      if (error.message.includes('Network Error') || error.message.includes('timeout')) {
+        errorMessage = t('account.referralNetworkError', { defaultValue: 'Network connection failed' });
+      } else if (error.message.includes('timeout')) {
+        errorMessage = t('account.referralTimeout', { defaultValue: 'Request timed out' });
+      }
+    }
+    addToast({
+      message: errorMessage,
+      position: 'top',
+      type: 'ERROR_V3',
+    });
+  }, [t, addToast]);
+
+  const generateReferralLink = useCallback(() => {
+    if (!isValidReferralCode) {
+      console.warn('useReferral - Cannot generate link: invalid referral code');
+      return null;
+    }
+    try {
+      const url = new URL(baseAppUrl);
+      url.searchParams.append('ref', referralCode.trim());
+      return url.toString();
+    } catch (error) {
+      console.error('useReferral - Error generating referral link:', error);
+      return `${baseAppUrl}?ref=${encodeURIComponent(referralCode.trim())}`;
+    }
+  }, [baseAppUrl, referralCode, isValidReferralCode]);
+
+  const shareReferralLink = useCallback(async () => {
+    if (!isValidReferralCode || !isValidAuth) {
+      const missingFields = [];
+      if (!isValidReferralCode) missingFields.push('referral code');
+      if (!isValidAuth) missingFields.push('authentication');
+      
+      console.warn('useReferral - Cannot share: missing', missingFields.join(', '));
+      handleError(
+        new Error(`Missing required fields: ${missingFields.join(', ')}`),
+        t('account.referralShareFailed', { defaultValue: 'Failed to share referral link' }),
+        'validation'
+      );
+      return;
+    }
+    if (isSharing) {
+      console.log('useReferral - Share already in progress');
+      return;
+    }
+    setIsSharing(true);
+    try {
+      appsFlyer.setAppInviteOneLinkID(REFERRAL_CONSTANTS.ONELINK_ID, null);
+      const linkParams = {
+        channel: REFERRAL_CONSTANTS.SHARE_CHANNEL,
+        campaign: REFERRAL_CONSTANTS.CAMPAIGN,
+        customerID: idAuth.trim(),
+        userParams: {
+          af_refcode: referralCode.trim(),
+        },
+      };
+      console.log('useReferral - Generating AppsFlyer link with params:', linkParams);
+      const generateLinkPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('AppsFlyer link generation timeout'));
+        }, 15000);
+        appsFlyer.generateInviteLink(
+          linkParams,
+          (link) => {
+            clearTimeout(timeoutId);
+            if (link && typeof link === 'string' && link.trim().length > 0) {
+              resolve(link.trim());
+            } else {
+              reject(new Error('Invalid link generated by AppsFlyer'));
+            }
+          },
+          (error) => {
+            clearTimeout(timeoutId);
+            reject(error || new Error('Unknown AppsFlyer error'));
+          }
+        );
+      });
+      const link = await generateLinkPromise;
+      console.log('useReferral - Generated AppsFlyer link:', link);
+      const shareOptions = {
+        message: Platform.OS === 'ios' ? undefined : link,
+        url: link,
+        title: t('account.referralShareTitle', { defaultValue: 'Join me on this app!' }),
+      };
+      await Share.share(shareOptions);
+      console.log('useReferral - Share completed successfully');
+    } catch (error) {
+      handleError(
+        error,
+        t('account.referralShareFailed', { defaultValue: 'Failed to share referral link' }),
+        'AppsFlyer sharing'
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  }, [idAuth, referralCode, isValidReferralCode, isValidAuth, t, handleError, isSharing]);
 
   const shareManualReferralLink = useCallback(async () => {
-    try {
-      const baseUrl = 'https://meetgo.onelink.me/UrXm';
-      const params = new URLSearchParams({
-        af_ios_url: 'https://meetgo.vn',
-        af_xp: 'custom',
-        pid: 'my_media_source',
-        af_refcode: referralCode
-      });
-      const longUrl = `${baseUrl}?${params.toString()}`;
-      Share.share({
-        message: `${longUrl}`,
-        url: longUrl, 
-      })
-        .then(() => console.log("Share successful"))
-        .catch(err => console.error("Share failed:", err));
-    } catch (error) {
-      console.error('Error sharing referral link:', error);
-      addToast({
-        message: t('account.referralShareFailed'),
-        position: 'top',
-        type: 'ERROR_V3',
-      });
+    if (!isValidReferralCode) {
+      console.warn('useReferral - Cannot share manual link: invalid referral code');
+      handleError(
+        new Error('Invalid referral code'),
+        t('account.referralShareFailed', { defaultValue: 'Failed to share referral link' }),
+        'validation'
+      );
+      return;
     }
-  }, [referralCode, t, addToast]);
+    if (isSharing) {
+      console.log('useReferral - Share already in progress');
+      return;
+    }
+    setIsSharing(true);
+    try {
+      const url = new URL(REFERRAL_CONSTANTS.BASE_ONELINK_URL);
+      const params = {
+        af_ios_url: REFERRAL_CONSTANTS.DEFAULT_IOS_URL,
+        af_xp: REFERRAL_CONSTANTS.CUSTOM_XP,
+        pid: REFERRAL_CONSTANTS.MEDIA_SOURCE,
+        af_refcode: referralCode.trim(),
+      };
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          url.searchParams.append(key, value);
+        }
+      });
+      const finalUrl = url.toString();
+      console.log('useReferral - Generated manual OneLink:', finalUrl);
+      const shareOptions = {
+        message: Platform.OS === 'ios' ? undefined : finalUrl,
+        url: finalUrl,
+        title: t('account.referralShareTitle', { defaultValue: 'Join me on this app!' }),
+      };
+      await Share.share(shareOptions);
+      console.log('useReferral - Manual share completed successfully');
+    } catch (error) {
+      handleError(
+        error,
+        t('account.referralShareFailed', { defaultValue: 'Failed to share referral link' }),
+        'manual sharing'
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  }, [referralCode, isValidReferralCode, t, handleError, isSharing]);
 
   const fetchReferralList = useCallback(async () => {
-    if (!idAuth || !token) return [];
+    if (!isValidAuth) {
+      console.warn('useReferral - Cannot fetch referral list: invalid authentication');
+      return [];
+    }
+    if (loading) {
+      console.log('useReferral - Fetch already in progress');
+      return [];
+    }
     setLoading(true);
     try {
       const axiosInstance = axios.create({
-        timeout: 10000,
-        headers: { 'Authorization': token }
+        timeout: REFERRAL_CONSTANTS.REQUEST_TIMEOUT,
+        headers: { 
+          'Authorization': token.trim(),
+          'Content-Type': 'application/json',
+        },
       });
-      const response = await axiosInstance.post(API_GLOBAL.ACCOUNT.GET_REFERRAL_LIST);      
-      if (response.status === 200 && response?.data?.data) {
-        return response.data.data;
-      } 
-      if (response?.data?.status?.code === 400 && 
-          response?.data?.status?.message === "Không tìm thấy dữ liệu!") {
+      console.log('useReferral - Fetching referral list...');
+      const response = await axiosInstance.post(API_GLOBAL.ACCOUNT.GET_REFERRAL_LIST);
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response structure');
+      }
+      console.log('useReferral - Fetch response status:', response.status);
+      if (response.status === 200) {
+        const data = response?.data?.data;
+        if (Array.isArray(data)) {
+          console.log('useReferral - Fetched referral list:', data.length, 'items');
+          return data;
+        } else if (data === null || data === undefined) {
+          console.log('useReferral - No referral data available');
+          return [];
+        }
+      }
+      if (response?.data?.status?.code === REFERRAL_CONSTANTS.ERROR_CODES.NOT_FOUND && 
+          response?.data?.status?.message === REFERRAL_CONSTANTS.ERROR_MESSAGES.NO_DATA) {
+        console.log('useReferral - No referral data found (expected)');
         return [];
       }
-      return [];
+      const errorMessage = response?.data?.status?.message || 'Unknown server error';
+      throw new Error(`Server error: ${errorMessage}`);
     } catch (error) {
-      const errorMessage = error.message?.includes('Network Error') ? 
-        t('account.referralLoadFailed') : 
-        t('account.referralLoadFailed');
-      addToast({
-        message: errorMessage,
-        position: 'top',
-        type: 'ERROR_V3',
-      });
+      let errorMessage = t('account.referralLoadFailed', { defaultValue: 'Failed to load referral list' });
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = t('account.referralTimeout', { defaultValue: 'Request timed out' });
+      } else if (error.message?.includes('Network Error')) {
+        errorMessage = t('account.referralNetworkError', { defaultValue: 'Network connection failed' });
+      }
+      handleError(error, errorMessage, 'fetching referral list');
       return [];
     } finally {
       setLoading(false);
     }
-  }, [idAuth, token, t, addToast]);
-  
+  }, [idAuth, token, isValidAuth, loading, t, handleError]);
+
+  const canShare = useMemo(() => {
+    return isValidReferralCode && !isSharing;
+  }, [isValidReferralCode, isSharing]);
+
+  const canFetch = useMemo(() => {
+    return isValidAuth && !loading;
+  }, [isValidAuth, loading]);
+
+  const getStatus = useCallback(() => {
+    return {
+      loading,
+      isSharing,
+      canShare,
+      canFetch,
+      hasValidReferralCode: isValidReferralCode,
+      hasValidAuth: isValidAuth,
+    };
+  }, [loading, isSharing, canShare, canFetch, isValidReferralCode, isValidAuth]);
+
   return {
     loading,
+    isSharing,
     fetchReferralList,
     shareManualReferralLink,
     shareReferralLink,
     generateReferralLink,
+    canShare,
+    canFetch,
+    getStatus,
+    isValidReferralCode,
+    isValidAuth,
   };
 };
