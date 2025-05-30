@@ -7,15 +7,11 @@ import {
   NativeScrollEvent,
   ScrollView,
 } from 'react-native';
-
 import LinearGradient from 'react-native-linear-gradient';
-/** Component */
 import CarouselDot from 'components/CarouselDot';
 import Container from 'components/Container';
 import Navbar from 'components/Navbar';
 import { useSharedValue } from 'react-native-reanimated';
-
-/** Utils and other */
 import {SPACING} from 'utils/styleGuide';
 import styles from './styles';
 import Images from 'utils/Images';
@@ -31,8 +27,6 @@ GoogleSignin.configure();
 
 const widthContainerDot = perWidth(100);
 const Intro = (): ReactElement => {
-    console.log("this is rendered autth")
-
   const { t } = useTranslation();
   const index = useSharedValue(0);
   const {onSignInApple, onSignInGoogle, onSiginAndroidApple, loading} =
