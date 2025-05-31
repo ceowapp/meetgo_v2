@@ -23,7 +23,7 @@ export default class DeepLink {
       }
       const appsFlyerOptions = {
         devKey: Config.DEV_KEY,
-        isDebug: DeepLink.parseBoolean(Config.IS_TEST_MODE),
+        isDebug: true,
         appId: Config.IOS_APP_ID,
         onInstallConversionDataListener: true,
         onDeepLinkListener: true,
@@ -248,22 +248,34 @@ export default class DeepLink {
       console.warn('DeepLink - Invalid referral code provided for storage:', code);
       return false;
     }
+    
     try {
-      await AsyncStorage.setItem(DeepLink.STORAGE_KEYS.REFERRAL_CODE, code.trim());
-      console.log('DeepLink: Referral code successfully stored.');
+      const trimmedCode = code.trim();
+      console.log('🔍 DeepLink: About to store referral code:', trimmedCode);
+      await AsyncStorage.setItem(DeepLink.STORAGE_KEYS.REFERRAL_CODE, trimmedCode);
+      const storedCode = await AsyncStorage.getItem(DeepLink.STORAGE_KEYS.REFERRAL_CODE);
+      console.log('✅ DeepLink: Referral code stored and verified:', storedCode);
       return true;
     } catch (err) {
-      console.error('DeepLink Error - Failed to store referral code:', err);
+      console.error('❌ DeepLink Error - Failed to store referral code:', err);
       return false;
     }
   }
 
   static async getReferralCode() {
     try {
+      console.log('🔍 DeepLink: Attempting to retrieve referral code...');
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('📋 DeepLink: All AsyncStorage keys:', allKeys);
       const code = await AsyncStorage.getItem(DeepLink.STORAGE_KEYS.REFERRAL_CODE);
-      return (code && typeof code === 'string' && code.trim().length > 0) ? code.trim() : null;
+      console.log('📱 DeepLink: Raw retrieved code:', code);
+      console.log('📱 DeepLink: Code type:', typeof code);
+      console.log('📱 DeepLink: Storage key used:', DeepLink.STORAGE_KEYS.REFERRAL_CODE);
+      const result = (code && typeof code === 'string' && code.trim().length > 0) ? code.trim() : null;
+      console.log('✨ DeepLink: Final processed code:', result);
+      return result;
     } catch (err) {
-      console.error('DeepLink Error - Failed to retrieve referral code:', err);
+      console.error('❌ DeepLink Error - Failed to retrieve referral code:', err);
       return null;
     }
   }

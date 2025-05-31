@@ -44,7 +44,9 @@ const useAuth = () => {
       if (googleResponse && googleResponse.data && googleResponse.data.user) {
         const userData = googleResponse.data.user;
         const idToken = googleResponse.data.idToken;
+        console.log('🚀 Auth: About to retrieve referral code for registration...');
         const referralCode = await DeepLink.getReferralCode();
+        console.log('🔑 Auth: Retrieved referral code for registration:', referralCode);
         const userParse: IReqRegister = {
           idAuth: userData.id,
           firstname: userData.familyName || '',
@@ -207,7 +209,9 @@ const useAuth = () => {
           }
           if (dataJwt?.sub) {
             try {
+              console.log('🚀 Auth: About to retrieve referral code for registration...');
               const referralCode = await DeepLink.getReferralCode();
+              console.log('🔑 Auth: Retrieved referral code for registration:', referralCode);
               const firstName = user?.name?.firstName || '';
               const lastName = user?.name?.lastName || '';
               const userEmail = user?.email || dataJwt?.email || '';
@@ -339,7 +343,9 @@ const useAuth = () => {
           console.log("User is likely a real person!");
         }
         if (identityToken) {
+          console.log('🚀 Auth: About to retrieve referral code for registration...');
           const referralCode = await DeepLink.getReferralCode();
+          console.log('🔑 Auth: Retrieved referral code for registration:', referralCode);
           const userParse = {
             idAuth: newUser,
             firstname: fullName?.familyName || '',

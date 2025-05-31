@@ -53,10 +53,10 @@ class AdsManager {
     try {
       const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
       const isTestConfig = this.parseBoolean(Config.IS_TEST_MODE);
-      return false;
+      return isDev || isTestConfig;
     } catch (error) {
       console.warn('AdsManager - Error determining test mode, defaulting to false:', error);
-      return isDev || isTestConfig;
+      return false;
     }
   }
 
@@ -321,6 +321,5 @@ class AdsManager {
 }
 
 export default new AdsManager();
-
 
 
